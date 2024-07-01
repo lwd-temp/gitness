@@ -87,6 +87,7 @@ type RepositoryInfo struct {
 	Identifier    string `json:"identifier"`
 	DefaultBranch string `json:"default_branch"`
 	GitURL        string `json:"git_url"`
+	GitSSHURL     string `json:"git_ssh_url"`
 }
 
 // TODO [CODE-1363]: remove after identifier migration.
@@ -110,6 +111,7 @@ func repositoryInfoFrom(repo *types.Repository, urlProvider url.Provider) Reposi
 		Identifier:    repo.Identifier,
 		DefaultBranch: repo.DefaultBranch,
 		GitURL:        urlProvider.GenerateGITCloneURL(repo.Path),
+		GitSSHURL:     urlProvider.GenerateGITCloneSSHURL(repo.Path),
 	}
 }
 
@@ -188,9 +190,9 @@ type CommitInfo struct {
 
 // commitInfoFrom gets the CommitInfo from a git.Commit.
 func commitInfoFrom(commit git.Commit) CommitInfo {
-	var added []string
-	var removed []string
-	var modified []string
+	added := []string{}
+	removed := []string{}
+	modified := []string{}
 
 	for _, stat := range commit.FileStats {
 		switch {

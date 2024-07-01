@@ -43,7 +43,7 @@ export function ContentHeader({
   resourceContent
 }: Pick<GitInfoProps, 'repoMetadata' | 'gitRef' | 'resourcePath' | 'resourceContent'>) {
   const { getString } = useStrings()
-  const { routes, standalone, hooks } = useAppContext()
+  const { routes, standalone, hooks, isCurrentSessionPublic } = useAppContext()
   const history = useHistory()
   const _isDir = isDir(resourceContent)
   const space = useGetSpaceParam()
@@ -135,7 +135,12 @@ export function ContentHeader({
               variation={ButtonVariation.SECONDARY}
               icon={CodeIcon.Clone}
               className={css.btnColorFix}
-              tooltip={<CloneButtonTooltip httpsURL={repoMetadata.git_url as string} />}
+              tooltip={
+                <CloneButtonTooltip
+                  httpsURL={repoMetadata.git_url as string}
+                  sshURL={repoMetadata.git_ssh_url as string}
+                />
+              }
               tooltipProps={{
                 interactionKind: 'click',
                 minimal: true,
@@ -164,7 +169,9 @@ export function ContentHeader({
           </>
         )}
       </Layout.Horizontal>
-      <div className={css.searchBoxCtn}>{!standalone ? <CodeSearch repoMetadata={repoMetadata} /> : null}</div>
+      <div className={css.searchBoxCtn}>
+        {!standalone && !isCurrentSessionPublic ? <CodeSearch repoMetadata={repoMetadata} /> : null}
+      </div>
     </Container>
   )
 }

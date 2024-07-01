@@ -16,5 +16,9 @@
 
 /* eslint-disable */
 // This is an auto-generated file
+export declare const added: string
 export declare const main: string
+export declare const removed: string
+export declare const suggestion: string
+export declare const text: string
 export declare const withMaxHeight: string

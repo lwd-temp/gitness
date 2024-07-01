@@ -55,7 +55,6 @@ import { OptionsMenuButton } from 'components/OptionsMenuButton/OptionsMenuButto
 import { useConfirmAct } from 'hooks/useConfirmAction'
 import { getUsingFetch, getConfig } from 'services/config'
 import noRepoImage from './no-repo.svg?url'
-import FeatureMap from './FeatureMap/FeatureMap'
 import css from './RepositoriesListing.module.scss'
 
 interface TypesRepoExtended extends TypesRepository {
@@ -225,47 +224,85 @@ export default function RepositoriesListing() {
           const confirmCancelImport = useConfirmAct()
           return (
             <Container onClick={Utils.stopEvent}>
-              {row?.original?.importProgress === ImportStatus.FAILED
-                ? null
-                : row.original.importing && (
-                    <OptionsMenuButton
-                      isDark
-                      width="100px"
-                      items={[
-                        {
-                          text: getString('cancelImport'),
-                          onClick: () =>
-                            confirmCancelImport({
-                              title: getString('cancelImport'),
-                              confirmText: getString('cancelImport'),
-                              intent: Intent.DANGER,
-                              message: (
-                                <Text
-                                  style={{ wordBreak: 'break-word' }}
-                                  font={{ variation: FontVariation.BODY2_SEMI, size: 'small' }}>
-                                  <String
-                                    useRichText
-                                    stringID="cancelImportConfirm"
-                                    vars={{ name: row.original?.uid }}
-                                    tagName="div"
-                                  />
-                                </Text>
-                              ),
-                              action: async () => {
-                                deleteRepo(`${row.original?.path as string}/+/`)
-                                  .then(() => {
-                                    showSuccess(getString('cancelledImport'), 2000)
-                                    refetch()
-                                  })
-                                  .catch(err => {
-                                    showError(getErrorMessage(err), 0, getString('failedToCancelImport'))
-                                  })
-                              }
-                            })
-                        }
-                      ]}
-                    />
-                  )}
+              {row?.original?.importProgress === ImportStatus.FAILED ? (
+                <OptionsMenuButton
+                  isDark
+                  width="100px"
+                  items={[
+                    {
+                      text: getString('deleteImport'),
+                      onClick: () =>
+                        confirmCancelImport({
+                          title: getString('deleteImport'),
+                          confirmText: getString('delete'),
+                          intent: Intent.DANGER,
+                          message: (
+                            <Text
+                              style={{ wordBreak: 'break-word' }}
+                              font={{ variation: FontVariation.BODY2_SEMI, size: 'small' }}>
+                              <String
+                                useRichText
+                                stringID="deleteFailedImport"
+                                vars={{ name: row.original?.uid }}
+                                tagName="div"
+                              />
+                            </Text>
+                          ),
+                          action: async () => {
+                            deleteRepo(`${row.original?.path as string}/+/`)
+                              .then(() => {
+                                showSuccess(getString('deletedImport'), 2000)
+                                refetch()
+                              })
+                              .catch(err => {
+                                showError(getErrorMessage(err), 0, getString('failedToDeleteImport'))
+                              })
+                          }
+                        })
+                    }
+                  ]}
+                />
+              ) : (
+                row.original.importing && (
+                  <OptionsMenuButton
+                    isDark
+                    width="100px"
+                    items={[
+                      {
+                        text: getString('cancelImport'),
+                        onClick: () =>
+                          confirmCancelImport({
+                            title: getString('cancelImport'),
+                            confirmText: getString('cancelImport'),
+                            intent: Intent.DANGER,
+                            message: (
+                              <Text
+                                style={{ wordBreak: 'break-word' }}
+                                font={{ variation: FontVariation.BODY2_SEMI, size: 'small' }}>
+                                <String
+                                  useRichText
+                                  stringID="cancelImportConfirm"
+                                  vars={{ name: row.original?.uid }}
+                                  tagName="div"
+                                />
+                              </Text>
+                            ),
+                            action: async () => {
+                              deleteRepo(`${row.original?.path as string}/+/`)
+                                .then(() => {
+                                  showSuccess(getString('cancelledImport'), 2000)
+                                  refetch()
+                                })
+                                .catch(err => {
+                                  showError(getErrorMessage(err), 0, getString('failedToCancelImport'))
+                                })
+                            }
+                          })
+                      }
+                    ]}
+                  />
+                )
+              )}
             </Container>
           )
         }
@@ -356,7 +393,6 @@ export default function RepositoriesListing() {
             </Container>
             <ResourceListingPagination response={response} page={page} setPage={setPage} />
           </Container>
-          <FeatureMap />
         </Layout.Horizontal>
       </PageBody>
     </Container>

@@ -48,6 +48,10 @@ type Provider interface {
 	// NOTE: url is guaranteed to not have any trailing '/'.
 	GenerateGITCloneURL(repoPath string) string
 
+	// GenerateGITCloneSSHURL generates the public git clone URL for the provided repo path.
+	// NOTE: url is guaranteed to not have any trailing '/'.
+	GenerateGITCloneSSHURL(repoPath string) string
+
 	// GenerateUIRepoURL returns the url for the UI screen of a repository.
 	GenerateUIRepoURL(repoPath string) string
 
@@ -87,6 +91,10 @@ type provider struct {
 	// NOTE: we store it as url.URL so we can derive clone URLS without errors.
 	gitURL *url.URL
 
+	SSHEnabled     bool
+	SSHDefaultUser string
+	gitSSHURL      *url.URL
+
 	// uiURL stores the raw URL to the ui endpoints.
 	uiURL *url.URL
 }
@@ -96,6 +104,9 @@ func NewProvider(
 	containerURLRaw string,
 	apiURLRaw string,
 	gitURLRaw,
+	gitSSHURLRaw string,
+	sshDefaultUser string,
+	sshEnabled bool,
 	uiURLRaw string,
 ) (Provider, error) {
 	// remove trailing '/' to make usage easier
@@ -103,6 +114,7 @@ func NewProvider(
 	containerURLRaw = strings.TrimRight(containerURLRaw, "/")
 	apiURLRaw = strings.TrimRight(apiURLRaw, "/")
 	gitURLRaw = strings.TrimRight(gitURLRaw, "/")
+	gitSSHURLRaw = strings.TrimRight(gitSSHURLRaw, "/")
 	uiURLRaw = strings.TrimRight(uiURLRaw, "/")
 
 	internalURL, err := url.Parse(internalURLRaw)
@@ -125,17 +137,25 @@ func NewProvider(
 		return nil, fmt.Errorf("provided gitURLRaw '%s' is invalid: %w", gitURLRaw, err)
 	}
 
+	gitSSHURL, err := url.Parse(gitSSHURLRaw)
+	if sshEnabled && err != nil {
+		return nil, fmt.Errorf("provided gitSSHURLRaw '%s' is invalid: %w", gitSSHURLRaw, err)
+	}
+
 	uiURL, err := url.Parse(uiURLRaw)
 	if err != nil {
 		return nil, fmt.Errorf("provided uiURLRaw '%s' is invalid: %w", uiURLRaw, err)
 	}
 
 	return &provider{
-		internalURL:  internalURL,
-		containerURL: containerURL,
-		apiURL:       apiURL,
-		gitURL:       gitURL,
-		uiURL:        uiURL,
+		internalURL:    internalURL,
+		containerURL:   containerURL,
+		apiURL:         apiURL,
+		gitURL:         gitURL,
+		gitSSHURL:      gitSSHURL,
+		SSHDefaultUser: sshDefaultUser,
+		SSHEnabled:     sshEnabled,
+		uiURL:          uiURL,
 	}, nil
 }
 
@@ -159,6 +179,18 @@ func (p *provider) GenerateGITCloneURL(repoPath string) string {
 	}
 
 	return p.gitURL.JoinPath(repoPath).String()
+}
+
+func (p *provider) GenerateGITCloneSSHURL(repoPath string) string {
+	if !p.SSHEnabled {
+		return ""
+	}
+	repoPath = path.Clean(repoPath)
+	if !strings.HasSuffix(repoPath, GITSuffix) {
+		repoPath += GITSuffix
+	}
+
+	return fmt.Sprintf("%s@%s:%s", p.SSHDefaultUser, p.gitSSHURL.String(), repoPath)
 }
 
 func (p *provider) GenerateUIBuildURL(repoPath, pipelineIdentifier string, seqNumber int64) string {

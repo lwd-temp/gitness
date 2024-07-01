@@ -25,6 +25,7 @@ import (
 	controllergithook "github.com/harness/gitness/app/api/controller/githook"
 	"github.com/harness/gitness/app/api/controller/keywordsearch"
 	"github.com/harness/gitness/app/api/controller/logs"
+	"github.com/harness/gitness/app/api/controller/migrate"
 	"github.com/harness/gitness/app/api/controller/pipeline"
 	"github.com/harness/gitness/app/api/controller/plugin"
 	"github.com/harness/gitness/app/api/controller/principal"
@@ -122,6 +123,7 @@ func NewAPIHandler(
 	sysCtrl *system.Controller,
 	uploadCtrl *upload.Controller,
 	searchCtrl *keywordsearch.Controller,
+	migrateCtrl *migrate.Controller,
 ) APIHandler {
 	// Use go-chi router for inner routing.
 	r := chi.NewRouter()
@@ -149,7 +151,7 @@ func NewAPIHandler(
 		setupRoutesV1(r, appCtx, config, repoCtrl, repoSettingsCtrl, executionCtrl, triggerCtrl, logCtrl, pipelineCtrl,
 			connectorCtrl, templateCtrl, pluginCtrl, secretCtrl, spaceCtrl, pullreqCtrl,
 			webhookCtrl, githookCtrl, git, saCtrl, userCtrl, principalCtrl, checkCtrl, sysCtrl, uploadCtrl,
-			searchCtrl)
+			searchCtrl, migrateCtrl)
 	})
 
 	// wrap router in terminatedPath encoder.
@@ -195,6 +197,7 @@ func setupRoutesV1(r chi.Router,
 	sysCtrl *system.Controller,
 	uploadCtrl *upload.Controller,
 	searchCtrl *keywordsearch.Controller,
+	migrateCtrl *migrate.Controller,
 ) {
 	setupSpaces(r, appCtx, spaceCtrl)
 	setupRepos(r, repoCtrl, repoSettingsCtrl, pipelineCtrl, executionCtrl, triggerCtrl,
@@ -212,6 +215,7 @@ func setupRoutesV1(r chi.Router,
 	setupResources(r)
 	setupPlugins(r, pluginCtrl)
 	setupKeywordSearch(r, searchCtrl)
+	setupMigrate(r, migrateCtrl)
 }
 
 // nolint: revive // it's the app context, it shouldn't be the first argument
@@ -241,6 +245,7 @@ func setupSpaces(r chi.Router, appCtx context.Context, spaceCtrl *space.Controll
 			r.Get("/templates", handlerspace.HandleListTemplates(spaceCtrl))
 			r.Post("/export", handlerspace.HandleExport(spaceCtrl))
 			r.Get("/export-progress", handlerspace.HandleExportProgress(spaceCtrl))
+			r.Post("/public-access", handlerspace.HandleUpdatePublicAccess(spaceCtrl))
 
 			r.Route("/members", func(r chi.Router) {
 				r.Get("/", handlerspace.HandleMembershipList(spaceCtrl))
@@ -277,6 +282,7 @@ func setupRepos(r chi.Router,
 			r.Delete("/", handlerrepo.HandleSoftDelete(repoCtrl))
 			r.Post("/purge", handlerrepo.HandlePurge(repoCtrl))
 			r.Post("/restore", handlerrepo.HandleRestore(repoCtrl))
+			r.Post("/public-access", handlerrepo.HandleUpdatePublicAccess(repoCtrl))
 
 			r.Route("/settings", func(r chi.Router) {
 				r.Get("/security", handlerreposettings.HandleSecurityFind(repoSettingsCtrl))
@@ -284,6 +290,8 @@ func setupRepos(r chi.Router,
 				r.Get("/general", handlerreposettings.HandleGeneralFind(repoSettingsCtrl))
 				r.Patch("/general", handlerreposettings.HandleGeneralUpdate(repoSettingsCtrl))
 			})
+
+			r.Get("/summary", handlerrepo.HandleSummary(repoCtrl))
 
 			r.Post("/move", handlerrepo.HandleMove(repoCtrl))
 			r.Get("/service-accounts", handlerrepo.HandleListServiceAccounts(repoCtrl))
@@ -624,6 +632,14 @@ func setupUser(r chi.Router, userCtrl *user.Controller) {
 				r.Delete("/", handleruser.HandleDeleteToken(userCtrl, enum.TokenTypeSession))
 			})
 		})
+
+		// Private keys
+		r.Route("/keys", func(r chi.Router) {
+			r.Get("/", handleruser.HandleListPublicKeys(userCtrl))
+			r.Post("/", handleruser.HandleCreatePublicKey(userCtrl))
+			r.Delete(fmt.Sprintf("/{%s}", request.PathParamPublicKeyIdentifier),
+				handleruser.HandleDeletePublicKey(userCtrl))
+		})
 	})
 }
 
@@ -669,6 +685,7 @@ func setupPrincipals(r chi.Router, principalCtrl principal.Controller) {
 	r.Route("/principals", func(r chi.Router) {
 		r.Get("/", handlerprincipal.HandleList(principalCtrl))
 		r.Get(fmt.Sprintf("/{%s}", request.PathParamPrincipalID), handlerprincipal.HandleFind(principalCtrl))
+		r.Post("/check-emails", handlerprincipal.HandleCheckExistenceByEmail(principalCtrl))
 	})
 }
 
@@ -698,4 +715,14 @@ func setupAccount(r chi.Router, userCtrl *user.Controller, sysCtrl *system.Contr
 	r.Post("/login", account.HandleLogin(userCtrl, cookieName))
 	r.Post("/register", account.HandleRegister(userCtrl, sysCtrl, cookieName))
 	r.Post("/logout", account.HandleLogout(userCtrl, cookieName))
+}
+
+func setupMigrate(r chi.Router, ctrl *migrate.Controller) {
+	r.Route("/migrate", func(r chi.Router) {
+		SetupMigrateRoutes(r, ctrl)
+	})
+}
+
+func SetupMigrateRoutes(_ chi.Router, _ *migrate.Controller) {
+	// add migrate routes with spaces
 }

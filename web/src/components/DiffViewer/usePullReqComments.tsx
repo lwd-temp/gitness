@@ -19,22 +19,22 @@ import { useMutate } from 'restful-react'
 import Selecto from 'selecto'
 import ReactDOM from 'react-dom'
 import { useLocation } from 'react-router-dom'
-import { useToaster, ButtonProps, Utils, Text } from '@harnessio/uicore'
-import { Color, FontVariation } from '@harnessio/design-system'
-import { findLastIndex, isEqual, max, noop, random, uniq } from 'lodash-es'
+import { useToaster, ButtonProps, Utils } from '@harnessio/uicore'
+import { findLastIndex, get, isEqual, max, noop, random, uniq } from 'lodash-es'
 import { useStrings } from 'framework/strings'
 import type { GitInfoProps } from 'utils/GitUtils'
 import type { DiffFileEntry } from 'utils/types'
 import { useConfirmAct } from 'hooks/useConfirmAction'
 import { useAppContext } from 'AppContext'
 import type { OpenapiCommentCreatePullReqRequest, TypesPullReq, TypesPullReqActivity } from 'services/code'
-import { PullRequestSection, getErrorMessage } from 'utils/Utils'
+import { CodeCommentState, PullRequestSection, filenameToLanguage, getErrorMessage } from 'utils/Utils'
 import { AppWrapper } from 'App'
 import { CodeCommentStatusButton } from 'components/CodeCommentStatusButton/CodeCommentStatusButton'
 import { CodeCommentSecondarySaveButton } from 'components/CodeCommentSecondarySaveButton/CodeCommentSecondarySaveButton'
 import { CodeCommentStatusSelect } from 'components/CodeCommentStatusSelect/CodeCommentStatusSelect'
 import { dispatchCustomEvent } from 'hooks/useEventListener'
 import { UseGetPullRequestInfoResult, usePullReqActivities } from 'pages/PullRequest/useGetPullRequestInfo'
+import { CommentThreadTopDecoration } from 'components/CommentThreadTopDecoration/CommentThreadTopDecoration'
 import {
   activitiesToDiffCommentItems,
   activityToCommentItem,
@@ -230,8 +230,12 @@ export function usePullReqComments({
       // Add `selected` class into selected lines / rows (only if selected lines count > 1)
       markSelectedLines(comment, lineInfo.rowElement, true)
 
+      lineInfo.rowElement.dataset.sourceLineNumber = String(comment.lineNumberEnd)
+
       // Annotate that the row is taken. We only support one thread per line as now
       updateDataCommentIds(lineInfo.rowElement, comment.inner.id as number, true)
+
+      const isCommentThreadResolved = !!get(comment.commentItems[0], 'payload.resolved', false)
 
       // Create placeholder for opposite row (id < 0 means this is a new thread). This placeholder
       // expands itself when CommentBox's height is changed (in split view)
@@ -247,6 +251,16 @@ export function usePullReqComments({
       commentRowElement.dataset.annotatedLine = String(comment.lineNumberEnd)
       commentRowElement.innerHTML = `<td colspan="2"></td>`
       lineInfo.rowElement.after(commentRowElement)
+
+      // Set both place-holder and comment box hidden when comment thread is resolved
+      if (isCommentThreadResolved) {
+        oppositeRowPlaceHolder.setAttribute('hidden', '')
+        commentRowElement.setAttribute('hidden', '')
+      }
+
+      commentRowElement.dataset.commentThreadStatus = isCommentThreadResolved
+        ? CodeCommentState.RESOLVED
+        : CodeCommentState.ACTIVE
 
       // `element` is where CommentBox will be mounted
       const element = commentRowElement.firstElementChild as HTMLTableCellElement
@@ -272,6 +286,19 @@ export function usePullReqComments({
       // the two, if they are actually different, we send a signal to CommentBox to
       // update to the latest data
       comment._commentItems = structuredClone(comment.commentItems)
+
+      const suggestionBlock = comment.left
+        ? undefined
+        : {
+            source:
+              comment.codeBlockContent ||
+              (lineElements?.length
+                ? lineElements
+                    .map(td => td.nextElementSibling?.querySelector('.d2h-code-line-ctn')?.textContent)
+                    .join('\n')
+                : lineInfo.rowElement?.lastElementChild?.querySelector('.d2h-code-line-ctn')?.textContent || ''),
+            lang: filenameToLanguage(diff.filePath.split('/').pop())
+          }
 
       // Note: CommentBox is rendered as an independent React component.
       //       Everything passed to it must be either values, or refs.
@@ -302,6 +329,7 @@ export function usePullReqComments({
             setDirty={setDirty || noop}
             currentUserName={currentUser?.display_name || currentUser?.email || ''}
             copyLinkToComment={copyLinkToComment}
+            suggestionBlock={suggestionBlock}
             handleAction={async (action, value, commentItem) => {
               let result = true
               let updatedItem: CommentItem<TypesPullReqActivity> | undefined = undefined
@@ -415,12 +443,15 @@ export function usePullReqComments({
               return [result, updatedItem]
             }}
             outlets={{
-              [CommentBoxOutletPosition.TOP]: <CommentThreadTopDecoration comment={comment} />,
+              [CommentBoxOutletPosition.TOP]: (
+                <CommentThreadTopDecoration startLine={comment.lineNumberStart} endLine={comment.lineNumberEnd} />
+              ),
               [CommentBoxOutletPosition.LEFT_OF_OPTIONS_MENU]: (
                 <CodeCommentStatusSelect
                   repoMetadata={repoMetadata}
                   pullReqMetadata={pullReqMetadata as TypesPullReq}
                   comment={comment}
+                  rowElement={commentRowElement}
                 />
               ),
               [CommentBoxOutletPosition.RIGHT_OF_REPLY_PLACEHOLDER]: (
@@ -445,6 +476,7 @@ export function usePullReqComments({
       )
     },
     [
+      diff,
       comments,
       contentRef,
       viewStyle,
@@ -455,9 +487,6 @@ export function usePullReqComments({
       currentUser?.display_name,
       currentUser?.email,
       pullReqMetadata,
-      diff.isRename,
-      diff.oldName,
-      diff.filePath,
       sourceRef,
       targetRef,
       save,
@@ -919,17 +948,6 @@ function useCommentAPI(path: string) {
  */
 function isDiffRendered(ref: React.RefObject<HTMLDivElement | null>) {
   return !!ref.current?.querySelector('[data]' || !!ref.current?.querySelector('.d2h-wrapper'))
-}
-
-const CommentThreadTopDecoration: React.FC<{ comment: DiffCommentItem<TypesPullReqActivity> }> = ({ comment }) => {
-  const { getString } = useStrings()
-  const { lineNumberStart: start, lineNumberEnd: end } = comment
-
-  return start !== end ? (
-    <Text color={Color.GREY_500} padding={{ bottom: 'small' }} font={{ variation: FontVariation.BODY }}>
-      {getString('pr.commentLineNumbers', { start, end })}
-    </Text>
-  ) : null
 }
 
 const selected = 'selected'

@@ -28,15 +28,29 @@ import {
 } from '@harnessio/uicore'
 import { useLocation } from 'react-router-dom'
 import { useGet, useMutate } from 'restful-react'
-import { orderBy } from 'lodash-es'
+import { get, orderBy } from 'lodash-es'
 import type { GitInfoProps } from 'utils/GitUtils'
 import { useStrings } from 'framework/strings'
 import { useAppContext } from 'AppContext'
-import type { TypesPullReqActivity, TypesPullReq, TypesPullReqStats, TypesCodeOwnerEvaluation } from 'services/code'
+import type {
+  TypesPullReqActivity,
+  TypesPullReq,
+  TypesPullReqStats,
+  TypesCodeOwnerEvaluation,
+  TypesPullReqReviewer,
+  TypesListCommitResponse
+} from 'services/code'
 import { CommentAction, CommentBox, CommentBoxOutletPosition, CommentItem } from 'components/CommentBox/CommentBox'
 import { useConfirmAct } from 'hooks/useConfirmAction'
-import { getErrorMessage, orderSortDate, ButtonRoleProps, PullRequestSection } from 'utils/Utils'
-import { activityToCommentItem } from 'components/DiffViewer/DiffViewerUtils'
+import {
+  getErrorMessage,
+  orderSortDate,
+  ButtonRoleProps,
+  PullRequestSection,
+  filenameToLanguage,
+  PRCommentFilterType
+} from 'utils/Utils'
+import { activitiesToDiffCommentItems, activityToCommentItem } from 'components/DiffViewer/DiffViewerUtils'
 import { NavigationCheck } from 'components/NavigationCheck/NavigationCheck'
 import { ThreadSection } from 'components/ThreadSection/ThreadSection'
 import { CodeCommentStatusSelect } from 'components/CodeCommentStatusSelect/CodeCommentStatusSelect'
@@ -44,16 +58,15 @@ import { CodeCommentStatusButton } from 'components/CodeCommentStatusButton/Code
 import { CodeCommentSecondarySaveButton } from 'components/CodeCommentSecondarySaveButton/CodeCommentSecondarySaveButton'
 import type { PRChecksDecisionResult } from 'hooks/usePRChecksDecision'
 import { UserPreference, useUserPreference } from 'hooks/useUserPreference'
+import { CommentThreadTopDecoration } from 'components/CommentThreadTopDecoration/CommentThreadTopDecoration'
 import { PullRequestTabContentWrapper } from '../PullRequestTabContentWrapper'
 import { DescriptionBox } from './DescriptionBox'
-import { PullRequestActionsBox } from './PullRequestActionsBox/PullRequestActionsBox'
 import PullRequestSideBar from './PullRequestSideBar/PullRequestSideBar'
 import { isCodeComment, isComment, isSystemComment } from '../PullRequestUtils'
-import { ChecksOverview } from '../Checks/ChecksOverview'
 import { usePullReqActivities } from '../useGetPullRequestInfo'
 import { CodeCommentHeader } from './CodeCommentHeader'
 import { SystemComment } from './SystemComment'
-import CodeOwnersOverview from '../CodeOwners/CodeOwnersOverview'
+import PullRequestOverviewPanel from './PullRequestOverviewPanel/PullRequestOverviewPanel'
 import css from './Conversation.module.scss'
 
 export interface ConversationProps extends Pick<GitInfoProps, 'repoMetadata' | 'pullReqMetadata'> {
@@ -64,6 +77,7 @@ export interface ConversationProps extends Pick<GitInfoProps, 'repoMetadata' | '
   prChecksDecisionResult?: PRChecksDecisionResult
   standalone: boolean
   routingId: string
+  pullReqCommits: TypesListCommitResponse | undefined
 }
 
 export const Conversation: React.FC<ConversationProps> = ({
@@ -75,13 +89,18 @@ export const Conversation: React.FC<ConversationProps> = ({
   onCancelEditDescription,
   prChecksDecisionResult,
   standalone,
-  routingId
+  routingId,
+  pullReqCommits
 }) => {
   const { getString } = useStrings()
   const { currentUser, routes } = useAppContext()
   const location = useLocation()
   const activities = usePullReqActivities()
-  const { data: reviewers, refetch: refetchReviewers } = useGet<Unknown[]>({
+  const {
+    data: reviewers,
+    refetch: refetchReviewers,
+    loading: loadingReviewers
+  } = useGet<TypesPullReqReviewer[]>({
     path: `/api/v1/repos/${repoMetadata.path}/+/pullreq/${pullReqMetadata.number}/reviewers`,
     debounce: 500
   })
@@ -129,22 +148,22 @@ export const Conversation: React.FC<ConversationProps> = ({
 
     switch (activityFilter.value) {
       case PRCommentFilterType.ALL_COMMENTS:
-        return blocks.filter(_activities => !isSystemComment(_activities))
+        return blocks?.filter(_activities => !isSystemComment(_activities))
 
       case PRCommentFilterType.RESOLVED_COMMENTS:
-        return blocks.filter(
+        return blocks?.filter(
           _activities => _activities[0].payload?.resolved && (isCodeComment(_activities) || isComment(_activities))
         )
 
       case PRCommentFilterType.UNRESOLVED_COMMENTS:
-        return blocks.filter(
+        return blocks?.filter(
           _activities => !_activities[0].payload?.resolved && (isComment(_activities) || isCodeComment(_activities))
         )
 
       case PRCommentFilterType.MY_COMMENTS: {
-        const allCommentBlock = blocks.filter(_activities => !isSystemComment(_activities))
-        const userCommentsOnly = allCommentBlock.filter(_activities => {
-          const userCommentReply = _activities.filter(
+        const allCommentBlock = blocks?.filter(_activities => !isSystemComment(_activities))
+        const userCommentsOnly = allCommentBlock?.filter(_activities => {
+          const userCommentReply = _activities?.filter(
             authorIsUser => currentUser?.uid && authorIsUser.payload?.author?.uid === currentUser?.uid
           )
           return userCommentReply.length !== 0
@@ -254,9 +273,27 @@ export const Conversation: React.FC<ConversationProps> = ({
               }></ThreadSection>
           )
         }
+
+        const activity = commentItems[0].payload
+        const right = get(activity?.payload, 'line_start_new', false)
+        const span = right ? activity?.code_comment?.span_new || 0 : activity?.code_comment?.span_old || 0
+        const startLine = (right ? activity?.code_comment?.line_new : activity?.code_comment?.line_old) as number
+        const endLine = startLine + span - 1
+
+        const comment = activitiesToDiffCommentItems(activity?.code_comment?.path as string, [
+          activity as TypesPullReqActivity
+        ])[0]
+
+        const suggestionBlock = comment.left
+          ? undefined
+          : {
+              source: comment.codeBlockContent as string,
+              lang: filenameToLanguage(activity?.code_comment?.path?.split('/').pop())
+            }
+
         return (
           <ThreadSection
-            key={`comment-${threadId}`}
+            key={`comment-${threadId}-${activity?.created}-${activity?.edited}-${activity?.resolved}-${activity?.code_comment?.outdated}`}
             onlyTitle={
               activityBlocks[index + 1] !== undefined && isSystemComment(activityBlocks[index + 1]) ? true : false
             }
@@ -278,6 +315,7 @@ export const Conversation: React.FC<ConversationProps> = ({
                 enableReplyPlaceHolder={true}
                 autoFocusAndPosition={true}
                 copyLinkToComment={copyLinkToComment}
+                suggestionBlock={suggestionBlock}
                 handleAction={async (action, value, commentItem) => {
                   let result = true
                   let updatedItem: CommentItem<TypesPullReqActivity> | undefined = undefined
@@ -328,12 +366,15 @@ export const Conversation: React.FC<ConversationProps> = ({
                 }}
                 outlets={{
                   [CommentBoxOutletPosition.TOP_OF_FIRST_COMMENT]: isCodeComment(commentItems) && (
-                    <CodeCommentHeader
-                      commentItems={commentItems}
-                      threadId={threadId}
-                      repoMetadata={repoMetadata}
-                      pullReqMetadata={pullReqMetadata}
-                    />
+                    <>
+                      <CommentThreadTopDecoration startLine={startLine} endLine={endLine} />
+                      <CodeCommentHeader
+                        commentItems={commentItems}
+                        threadId={threadId}
+                        repoMetadata={repoMetadata}
+                        pullReqMetadata={pullReqMetadata}
+                      />
+                    </>
                   ),
                   [CommentBoxOutletPosition.LEFT_OF_OPTIONS_MENU]: (
                     <CodeCommentStatusSelect
@@ -363,41 +404,35 @@ export const Conversation: React.FC<ConversationProps> = ({
         )
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activityBlocks, currentUser, pullReqMetadata]
+    [activityBlocks, currentUser, pullReqMetadata, activities]
   )
 
   return (
-    <PullRequestTabContentWrapper>
+    <PullRequestTabContentWrapper section={PullRequestSection.CONVERSATION}>
       <Container>
         <Layout.Vertical spacing="xlarge">
-          <PullRequestActionsBox
-            repoMetadata={repoMetadata}
-            pullReqMetadata={pullReqMetadata}
-            onPRStateChanged={onPRStateChanged}
-            refetchReviewers={refetchReviewers}
-          />
           <Container>
             <Layout.Horizontal width="calc(var(--page-container-width) - 48px)">
               <Container width={`70%`}>
                 <Layout.Vertical spacing="xlarge">
                   {prChecksDecisionResult && (
-                    <ChecksOverview
-                      repoMetadata={repoMetadata}
-                      pullReqMetadata={pullReqMetadata}
-                      prChecksDecisionResult={prChecksDecisionResult}
-                      codeOwners={codeOwners as TypesCodeOwnerEvaluation}
-                    />
+                    <Container padding={{ bottom: 'small' }}>
+                      <PullRequestOverviewPanel
+                        repoMetadata={repoMetadata}
+                        pullReqMetadata={pullReqMetadata}
+                        onPRStateChanged={onPRStateChanged}
+                        refetchReviewers={refetchReviewers}
+                        prChecksDecisionResult={prChecksDecisionResult}
+                        codeOwners={codeOwners}
+                        reviewers={reviewers}
+                        pullReqCommits={pullReqCommits}
+                        setActivityFilter={setActivityFilter}
+                        loadingReviewers={loadingReviewers}
+                        refetchCodeOwners={refetchCodeOwners}
+                        activities={activities}
+                      />
+                    </Container>
                   )}
-                  {codeOwners && prChecksDecisionResult && (
-                    <CodeOwnersOverview
-                      standalone={standalone}
-                      codeOwners={codeOwners}
-                      repoMetadata={repoMetadata}
-                      pullReqMetadata={pullReqMetadata}
-                      prChecksDecisionResult={prChecksDecisionResult}
-                    />
-                  )}
-
                   {(hasDescription || showEditDescription) && (
                     <DescriptionBox
                       routingId={routingId}
@@ -407,6 +442,7 @@ export const Conversation: React.FC<ConversationProps> = ({
                       onDescriptionSaved={onDescriptionSaved}
                       onCancelEditDescription={onCancelEditDescription}
                       prStats={prStats}
+                      pullReqCommits={pullReqCommits}
                     />
                   )}
 
@@ -465,14 +501,6 @@ export const Conversation: React.FC<ConversationProps> = ({
       <NavigationCheck when={dirtyCurrentComments || dirtyNewComment} />
     </PullRequestTabContentWrapper>
   )
-}
-
-export enum PRCommentFilterType {
-  SHOW_EVERYTHING = 'showEverything',
-  ALL_COMMENTS = 'allComments',
-  MY_COMMENTS = 'myComments',
-  RESOLVED_COMMENTS = 'resolvedComments',
-  UNRESOLVED_COMMENTS = 'unresolvedComments'
 }
 
 function useActivityFilters() {

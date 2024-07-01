@@ -29,6 +29,9 @@ func ProvideURLProvider(config *types.Config) (Provider, error) {
 		config.URL.Container,
 		config.URL.API,
 		config.URL.Git,
+		config.URL.GitSSH,
+		config.SSH.DefaultUser,
+		config.SSH.Enable,
 		config.URL.UI,
 	)
 }

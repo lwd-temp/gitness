@@ -18,11 +18,12 @@ require (
 	github.com/drone/funcmap v0.0.0-20190918184546-d4ef6e88376d
 	github.com/drone/go-convert v0.0.0-20230919093251-7104c3bcc635
 	github.com/drone/go-generate v0.0.0-20230920014042-6085ee5c9522
-	github.com/drone/go-scm v1.31.2
+	github.com/drone/go-scm v1.38.0
 	github.com/drone/runner-go v1.12.0
-	github.com/drone/spec v0.0.0-20230919004456-7455b8913ff5
+	github.com/drone/spec v0.0.0-20230920145636-3827abdce961
 	github.com/fatih/color v1.16.0
 	github.com/gabriel-vasile/mimetype v1.4.3
+	github.com/gliderlabs/ssh v0.3.7
 	github.com/go-chi/chi v1.5.4
 	github.com/go-chi/cors v1.2.1
 	github.com/go-redis/redis/v8 v8.11.5
@@ -35,6 +36,7 @@ require (
 	github.com/gorhill/cronexpr v0.0.0-20180427100037-88b0669f7d75
 	github.com/gotidy/ptr v1.4.0
 	github.com/guregu/null v4.0.0+incompatible
+	github.com/harness/harness-migrate v0.21.1-0.20240624210736-65c7e9fbe930
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/jmoiron/sqlx v1.3.3
 	github.com/joho/godotenv v1.3.0
@@ -54,15 +56,15 @@ require (
 	github.com/swaggest/openapi-go v0.2.23
 	github.com/swaggest/swgui v1.8.0
 	github.com/unrolled/secure v1.0.8
-	github.com/zricethezav/gitleaks/v8 v8.18.2
+	github.com/zricethezav/gitleaks/v8 v8.18.5-0.20240614204812-26f34692fac6
 	go.starlark.net v0.0.0-20231121155337-90ade8b19d09
 	go.uber.org/multierr v1.8.0
-	golang.org/x/crypto v0.14.0
+	golang.org/x/crypto v0.17.0
 	golang.org/x/exp v0.0.0-20230108222341-4b8118a2686a
 	golang.org/x/oauth2 v0.10.0
 	golang.org/x/sync v0.3.0
-	golang.org/x/term v0.13.0
-	golang.org/x/text v0.13.0
+	golang.org/x/term v0.15.0
+	golang.org/x/text v0.14.0
 	google.golang.org/api v0.132.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/mail.v2 v2.3.1
@@ -76,6 +78,7 @@ require (
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/99designs/httpsignatures-go v0.0.0-20170731043157-88528bf4ca7e // indirect
 	github.com/BobuSumisu/aho-corasick v1.0.3 // indirect
+	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
 	github.com/antonmedv/expr v1.15.2 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -120,7 +123,7 @@ require (
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
-	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/rivo/uniseg v0.4.3 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
@@ -151,7 +154,7 @@ require (
 	cloud.google.com/go/profiler v0.3.1
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
-	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
+	github.com/alecthomas/units v0.0.0-20231202071711-9a357b53e9c9 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
@@ -164,15 +167,14 @@ require (
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/sergi/go-diff v1.3.1 // indirect
-	github.com/swaggest/jsonschema-go v0.3.40 // indirect
+	github.com/swaggest/jsonschema-go v0.3.40
 	github.com/swaggest/refl v1.1.0 // indirect
 	github.com/vearutop/statigz v1.4.0 // indirect
 	github.com/yuin/goldmark v1.4.13
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
-	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
 	google.golang.org/genproto v0.0.0-20230706204954-ccb25ca9f130 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

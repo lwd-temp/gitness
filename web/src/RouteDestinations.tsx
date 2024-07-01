@@ -51,6 +51,9 @@ import CodeSearchPage from 'pages/Search/CodeSearchPage'
 import AddUpdatePipeline from 'pages/AddUpdatePipeline/AddUpdatePipeline'
 import { useAppContext } from 'AppContext'
 import PipelineSettings from 'components/PipelineSettings/PipelineSettings'
+import GitspaceDetail from 'cde/pages/GitspaceDetail/GitspaceDetail'
+import Gitspaces from 'cde/pages/Gitspaces/Gitspaces'
+import GitspacesListing from 'cde/pages/GitspacesListing/GitspacesListing'
 
 export const RouteDestinations: React.FC = React.memo(function RouteDestinations() {
   const { getString } = useStrings()
@@ -261,6 +264,38 @@ export const RouteDestinations: React.FC = React.memo(function RouteDestinations
           </Route>
         )}
 
+        {standalone && (
+          <Route exact path={routes.toCDEGitspacesEdit({ space: pathProps.space, gitspaceId: pathProps.gitspaceId })}>
+            <LayoutWithSideNav title={getString('cde.gitspaces')}>
+              <Gitspaces />
+            </LayoutWithSideNav>
+          </Route>
+        )}
+
+        {standalone && (
+          <Route path={routes.toCDEGitspaceDetail({ space: pathProps.space, gitspaceId: pathProps.gitspaceId })}>
+            <LayoutWithSideNav title={getString('cde.gitspaces')}>
+              <GitspaceDetail />
+            </LayoutWithSideNav>
+          </Route>
+        )}
+
+        {standalone && (
+          <Route path={routes.toCDEGitspaces({ space: pathProps.space })}>
+            <LayoutWithSideNav title={getString('cde.gitspaces')}>
+              <Gitspaces />
+            </LayoutWithSideNav>
+          </Route>
+        )}
+
+        {standalone && (
+          <Route path={routes.toCDEGitspacesCreate({ space: pathProps.space })}>
+            <LayoutWithSideNav title={getString('cde.gitspaces')}>
+              <GitspacesListing />
+            </LayoutWithSideNav>
+          </Route>
+        )}
+
         <Route
           path={routes.toCODECommit({
             repoPath,
@@ -290,20 +325,6 @@ export const RouteDestinations: React.FC = React.memo(function RouteDestinations
         <Route path={routes.toCODETags({ repoPath })} exact>
           <LayoutWithSideNav title={getString('pageTitle.tags')}>
             <RepositoryTags />
-          </LayoutWithSideNav>
-        </Route>
-
-        <Route
-          path={[routes.toCODESpaceSearch({ space: pathProps.space }), routes.toCODERepositorySearch({ repoPath })]}
-          exact>
-          <LayoutWithSideNav title={getString('search')}>
-            <CodeSearchPage />
-          </LayoutWithSideNav>
-        </Route>
-
-        <Route path={routes.toCODESemanticSearch({ repoPath })} exact>
-          <LayoutWithSideNav title={getString('pageTitle.search')}>
-            <Search />
           </LayoutWithSideNav>
         </Route>
 
@@ -351,6 +372,20 @@ export const RouteDestinations: React.FC = React.memo(function RouteDestinations
           ]}>
           <LayoutWithSideNav title={getString('pageTitle.repository')}>
             <Repository />
+          </LayoutWithSideNav>
+        </Route>
+
+        <Route
+          path={[routes.toCODESpaceSearch({ space: pathProps.space }), routes.toCODERepositorySearch({ repoPath })]}
+          exact>
+          <LayoutWithSideNav title={getString('search')}>
+            <CodeSearchPage />
+          </LayoutWithSideNav>
+        </Route>
+
+        <Route path={routes.toCODESemanticSearch({ repoPath })} exact>
+          <LayoutWithSideNav title={getString('pageTitle.search')}>
+            <Search />
           </LayoutWithSideNav>
         </Route>
       </Switch>

@@ -35,6 +35,7 @@ func ProvideController(
 	principalStore store.PrincipalStore,
 	tokenStore store.TokenStore,
 	membershipStore store.MembershipStore,
+	publicKeyStore store.PublicKeyStore,
 ) *Controller {
 	return NewController(
 		tx,
@@ -42,5 +43,6 @@ func ProvideController(
 		authorizer,
 		principalStore,
 		tokenStore,
-		membershipStore)
+		membershipStore,
+		publicKeyStore)
 }

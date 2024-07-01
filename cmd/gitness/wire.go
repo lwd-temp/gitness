@@ -17,6 +17,7 @@ import (
 	controllerkeywordsearch "github.com/harness/gitness/app/api/controller/keywordsearch"
 	"github.com/harness/gitness/app/api/controller/limiter"
 	controllerlogs "github.com/harness/gitness/app/api/controller/logs"
+	"github.com/harness/gitness/app/api/controller/migrate"
 	"github.com/harness/gitness/app/api/controller/pipeline"
 	"github.com/harness/gitness/app/api/controller/plugin"
 	"github.com/harness/gitness/app/api/controller/principal"
@@ -63,6 +64,8 @@ import (
 	"github.com/harness/gitness/app/services/notification"
 	"github.com/harness/gitness/app/services/notification/mailer"
 	"github.com/harness/gitness/app/services/protection"
+	"github.com/harness/gitness/app/services/publicaccess"
+	"github.com/harness/gitness/app/services/publickey"
 	pullreqservice "github.com/harness/gitness/app/services/pullreq"
 	reposervice "github.com/harness/gitness/app/services/repo"
 	"github.com/harness/gitness/app/services/settings"
@@ -87,6 +90,7 @@ import (
 	"github.com/harness/gitness/livelog"
 	"github.com/harness/gitness/lock"
 	"github.com/harness/gitness/pubsub"
+	"github.com/harness/gitness/ssh"
 	"github.com/harness/gitness/store/database/dbtx"
 	"github.com/harness/gitness/types"
 	"github.com/harness/gitness/types/check"
@@ -114,6 +118,7 @@ func initSystem(ctx context.Context, config *types.Config) (*cliserver.System, e
 		url.WireSet,
 		space.WireSet,
 		limiter.WireSet,
+		publicaccess.WireSet,
 		repo.WireSet,
 		reposettings.WireSet,
 		pullreq.WireSet,
@@ -191,6 +196,9 @@ func initSystem(ctx context.Context, config *types.Config) (*cliserver.System, e
 		openapi.WireSet,
 		repo.ProvideRepoCheck,
 		audit.WireSet,
+		ssh.WireSet,
+		publickey.WireSet,
+		migrate.WireSet,
 	)
 	return &cliserver.System{}, nil
 }

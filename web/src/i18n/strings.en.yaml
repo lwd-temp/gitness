@@ -12,8 +12,11 @@ public: Public
 private: Private
 cancel: Cancel
 cancelImport: Cancel Import
+deleteImport: Delete Import
 cancelledImport: Cancelled Import
-failedToCancelImport: failed to cancel import
+deletedImport: Deleted Import
+failedToCancelImport: Failed to cancel import
+failedToDeleteImport: Failed to delete import
 name: Name
 value: Value
 help: help
@@ -39,6 +42,8 @@ createARepo: Create a repository
 createRepo: Create Repository
 enterRepoName: Enter Repository Name
 enterDescription: Enter a description (optional)
+enterRepoDescription: Enter repository description
+addDescription: Add a description
 addLicense: Add License
 none: None
 create: Create
@@ -122,6 +127,7 @@ createRepoModal:
   branch: ' branch.'
   publicLabel: Anyone with access to the Gitness environment can clone this repo.
   privateLabel: You choose who can see and commit to this repository.
+  publicWarning: Please note that anyone with access to the Gitness environment can clone this repo.
 validation:
   repoNamePatternIsNotValid: "Name can only contain alphanumerics, '-', '_', '.', and '$'"
   gitBranchNameInvalid: Branch name is invalid.
@@ -171,6 +177,7 @@ deleteTag: Delete Tag
 deleteTagConfirm: Are you sure you want to delete tag <strong>{{name}}</strong>? You can't undo this action.
 deleteBranchConfirm: Are you sure you want to delete branch <strong>{{name}}</strong>? You can't undo this action.
 cancelImportConfirm: Are you sure you want to abort import for <strong>{{name}}</strong>? You can't undo this action.
+deleteFailedImport: Are you sure you want to delete <strong>{{name}}</strong>?
 browse: Browse
 browseFiles: Browse Files
 compare: Compare
@@ -194,6 +201,11 @@ createBranchFromTag: "<strong>Create branch: {{newBranch}}</strong> from tag '{{
 tagNotFound: 'Tag <strong>{{tag}}</strong> not found.'
 branchNotFound: 'Branch <strong>{{branch}}</strong> not found.'
 branchUpToDate: Up to date with {{defaultBranch}}
+branchUpToDateWith: Branch is up to date with
+unableToGetDivergence: Unable to get divergence
+branchCommitCount: '{count} {count|1:commit,commits}'
+behindDivergence: '{behindCommits} {behindCommits|1:commit,commits} behind '
+aheadDivergence: '{aheadCommits} {aheadCommits|1:commit,commits} ahead'
 branchDivergenceBehind: '{behind} {behindCommits|1:commit,commits} behind {defaultBranch}'
 branchDivergenceAhead: '{ahead} {aheadCommits|1:commit,commits} ahead {defaultBranch}'
 branchDivergenceAheadBehind: '{ahead} {aheadCommits|1:commit,commits} ahead, {behind} {behindCommits|1:commit,commits} behind {defaultBranch}'
@@ -240,14 +252,24 @@ webhook: Webhook
 diff: Diff
 draft: Draft
 conversation: Conversation
+commandLine: command line
 pr:
+  toggleComments: Toggle comments
+  suggestedChange: Suggested change
+  addSuggestion: Add suggestion to batch
+  removeSuggestion: Remove suggestion from batch
+  commitSuggestions: 'Commit {count|1:suggestion,suggestions}'
+  commitSuggestion: Commit suggestion
+  applySuggestions: 'Apply {count|1:suggestion,suggestions} from code review'
+  suggestionApplied: Suggestion applied
   commentLineNumbers: Comment on line {{start}} to {{end}}
   moreComments: '{num} {count|0:Show more,1:1 more comment,more comments}'
   copyLinkToComment: Copy link to comment
   expandFullFile: Expand all
   collapseFullFile: Collapse expanded lines
   ableToMerge: Able to merge.
-  cantBeMerged: This branch has conflicts with the base branch.
+  useCmdLineToResolveConflicts: Use the {cmd} to resolve conflicts
+  cantBeMerged: This branch has conflicts with the {{name}} branch.
   cantMerge: Can't be merged. You can still create the pull request.
   failedToCreate: Failed to create Pull Request.
   titlePlaceHolder: Enter the pull request title
@@ -271,7 +293,7 @@ pr:
   unified: Unified
   reviewChanges: Review changes
   mergePR: Merge pull request
-  branchHasNoConflicts: This branch has no conflicts with the base branch
+  branchHasNoConflicts: Pull request can be merged
   checkingToMerge: Checking for ability to merge automatically...
   prCanBeMerged: Mergeing can be performed automatically.
   enterDesc: Enter description here
@@ -284,10 +306,11 @@ pr:
   prClosed: This Pull Request was closed.
   reviewSubmitted: Review submitted.
   requestSubmitted: Request for changes submitted.
+  requestedChanges: '{{user}} requested changes to the pull request'
   prReviewSubmit: '{user} {state|approved:approved, rejected:rejected,changereq:requested changes to, reviewed} this pull request.  {time}'
-  prMergedBannerInfo: '{user} merged branch {source} into {target} {time}.'
-  prMergedInfo: '{user}{bypassed|true: bypassed rules and , }merged changes from {source} into {target} as {mergeSha} {time}'
-  prRebasedInfo: '{user}{bypassed|true: bypassed rules and , }rebased changes from branch {source} onto {target}, now at {mergeSha} {time}'
+  prMergedBannerInfo: '{user} merged branch {source} into {target} {time}'
+  prMergedInfo: '{user} merged changes from {source} into {target} as {mergeSha} {time}'
+  prRebasedInfo: '{user} rebased changes from branch {source} onto {target}, now at {mergeSha} {time}'
   prBranchPushInfo: '{user} pushed a new commit {commit}'
   prBranchDeleteInfo: '{user} deleted the source branch with latest commit {commit}'
   prStateChanged: '{user} changed pull request state from {old} to {new}.'
@@ -309,6 +332,7 @@ pr:
     rebaseAndMergeDesc: All commits from this branch will be rebased and added to the base branch.
     close: Close pull request
     closeDesc: Close this pull request. You can still re-open the request after closing.
+    createAMergeCommit: Create a merge commit
   outdated: Outdated
   titleIsRequired: Pull Request title is required.
   descIsRequired: Pull Request description is required.
@@ -574,6 +598,7 @@ token: Token
 expired: Expired
 expirationDate: Expiration Date
 created: Created
+thisRefHas: 'This {isTag|true:tag,branch} has'
 changePasswordSuccesfully: Password changed successfully
 applyChanges: Apply Changes
 showMore: View more
@@ -893,7 +918,8 @@ enterGitlabPlaceholder: https://gitlab.com/
 enterGithubPlaceholder: https://api.github.com/
 enterBitbucketPlaceholder: https://bitbucket.org/
 changeRepoVis: Change repository visibility
-changeRepoVisContent: Are you sure you want to make this repository {repoVis}? {repoText}
+changeRepoVisContent: Are you sure you want to make this repository {repoVis}?
+confirmRepoVisButton: Yes, make the Repository {repoVis}
 repoVisibility: Repository visibility
 visibility: Visibility
 attachText: Attach images & videos by dragging & dropping, selecting or pasting them.
@@ -959,10 +985,10 @@ branchProtection:
   ruleCreated: Rule Created
   requirePr: Require pull request
   requirePrText: Do not allow any changes to matching branches without a pull request
-  prFailedText: 'This branch has no conflicts with the base branch. {{ruleCount}} branch rules failed'
+  prFailedText: 'Cannot merge pull request'
   mergePrAlertTitle: Merge pull request alert
   mergePrAlertText: 'Merge cannot be completed. {{ruleCount}} branch rules failed: '
-  mergeCheckboxAlert: Bypass branch rules and merge
+  mergeCheckboxAlert: Bypass and merge anyway
   createBranchAlertBtn: Bypass rules and create branch
   createBranchAlertText: Some rules will be bypassed by creating branch
   createBranchBlockText: Some rules don't allow you to create branch
@@ -980,6 +1006,7 @@ codeOwner:
   changesRequested: '{count} {count|1:change,changes} requested'
   waitToApprove: '{count} pending {count|1:approval,approvals} '
   approvalCompleted: '{count}/{total} approvals completed'
+  pendingLatestApprovals: '{count} {count|1:approval,approvals} pending on latest changes'
 approved: Approved
 comingSoon: Coming soon...
 enterANumber: Enter a number
@@ -1013,6 +1040,62 @@ prGenSummary: AIDA generate PR summary, insert at the cursor or replace selected
 aidaGenSummary: 'AIDA is generating a summary...'
 generateSummary: Generate PR Summary
 invalidResponse: Invalid summary response generated
+allCommentsResolved: All comments resolved
+resolveComments: There are {{n}} unresolved comments
+view: View
+mergeCheckInProgress: Merge check in progress...
+allConflictsNeedToBeResolved: All conflicts have to be resolved before merging
+conflictsFoundInThisBranch: Conflicts found in this branch
+details: Details
+showCheckAll: Show all checks
+showLessCheck: Show less checks
+markAsDraft: Mark as draft
+mergeSetting: Merge setting
+deleteBranchText: Delete the branch after merging
+customizeMergeCommitMessage: Customize merge commit message
+mergeStrategy: Merge strategy
+selectMergeStrat: Select merge strategy
+writeDownCommit: Write down commit message here
+prHasNoConflicts: This branch has no conflicts with {name} branch
+checkStatus:
+  succeeded: Succeeded in {time}
+  failed: Failed in {time}
+  running: Running...
+  pending: Pending...
+  error: Errored in {time}
+changesSection:
+  reqChangeFromCodeOwners: Changes requested by code owner
+  codeOwnerReqChanges: Code owner requested changes
+  pendingAppFromCodeOwners: Approvals pending from code owners
+  pendingLatestApprovalCodeOwners: Latest changes are pending approval from code owners
+  waitingOnCodeOwner: Changes are pending approval from code owners
+  waitingOnReviewers: Changes are pending approval from required reviewers
+  waitingOnLatestCodeOwner: Waiting on code owner reviews of latest changes
+  approvalPending: Approvals pending
+  changesApproved: Changes approved
+  noReviewsReq: No reviews required
+  noCodeOwnerReviewsReq: No codeowner reviews
+  pullReqWithoutAnyReviews: Pull request can be merged without any reviews
+  changesAppByRev: Changes were approved by reviewers
+  changesApprovedByXReviewers: Changes were approved by {length} {length|1:reviewer,reviewers}
+  latestChangesApprovedByXReviewers: Latest changes were approved by {length} {length|1:reviewer,reviewers}
+  latestChangesWereAppByCodeOwner: Latest changes were approved by code owners
+  latestChangesPendingReqRev: Latest changes are pending approval from required reviewers
+  changesWereAppByCodeOwner: Changes were approved by code owners
+  changesWereAppByLatestReqRev: Changes were approved by required reviewers
+  latestChangesWereApprovedByReq: Latest changes were approved by required reviewers
+  someChangesWereAppByCodeOwner: Some changes were approved by code owners
+  xApprovalsArePending: '{approved}/{min} approvals are pending'
+  codeOwnerReqChangesToPr: Code owners requested changes to the pull request
+checkSection:
+  someReqChecksFailed: Some required checks have failed
+  someReqChecksPending: Some required checks are pending
+  someReqChecksRunning: Some required checks are running
+  someChecksNotComplete: Some checks haven’t been completed yet
+  allChecksSucceeded: All checks have succeeded
+  allReqChecksPassed: All required checks passed
+  someChecksFailed: Some checks have failed
+  someChecksRunning: Some checks are running
 importFailed: Import Failed
 uploadAFileError: There is no image or video uploaded. Please upload an image or video.
 securitySettings:
@@ -1026,3 +1109,128 @@ securitySettings:
   detectDesc: passive vulnerability will report errors but not block
   block: Block
   blockDesc: active vulnerability blocks commit if any vulnerability is found
+suggestion: 'Add a suggestion, <Ctrl-g>'
+heading: Heading
+bold: Bold
+italic: Italic
+upload: Upload
+unorderedList: Unordered list
+checklist: Check list
+code: Code
+cde:
+  branchPlaceholder: Branch
+  introText1: Get ready to code in seconds
+  introText2: Isolated cloud development environments with your favorite editor
+  introText3: Connect in seconds with a repository
+  cloudDeveloperExperience: Cloud Development Environments
+  createGitspace: Create Gitspace
+  deleteGitspace: Delete Gitspace
+  editGitspace: Edit Gitspace
+  viewGitspace: View Gitspace Detail
+  updateGitspace: Update Gitspace
+  gitspaces: Gitspaces
+  noRepo: Don’t have a Git repo?
+  createRepo: Create a repo in Harness
+  newGitspace: + New Gitspace
+  manageGitspaces: Manage Gitspaces
+  noGitspaces: You have not created any Gitspace yet
+  gitspaceDetail: Gitspace Detail
+  machine: Machine
+  region: Region
+  or: OR
+  logs: Logs
+  noData: No Data
+  noChange: No Change
+  used: Used
+  hours: Hours
+  na: NA
+  retry: Retry
+  eventTimeline: Event Timeline
+  cpu: Cpu
+  memory: Memory
+  disk: Disk
+  regionSelectWarning: Select a region first
+  gitspaceUpdateSuccess: Gitspace updated successfully
+  regionValidationMessage: Region is required
+  repoValidationMessage: Repository is required
+  branchValidationMessage: Branch is required
+  machineValidationMessage: Machine Type is required
+  startingGitspace: Starting Gitspace
+  stopingGitspace: Stopping Gitspace
+  sessionDuration: Last Started
+  deleteGitspaceTitle: Delete Gitspace
+  deleteGitspaceText: "Are you sure to delete the gitspace, '{{name}}'?"
+  deleteSuccess: Gitspace deleted succesfully
+  repositoryAndBranch: Repository & Branch
+  details:
+    actions: More Actions
+    openEditor: Open VS Code Editor
+    openBrowser: Open VS Code Online
+    goToDashboard: Go To Dashboard
+    startGitspace: Start Gitspace
+    stopProvising: Stop Provising
+    noData: No Data for Gitspace
+    provisioningGitspace: Provisioning the Gitspace...
+    gitspaceStopped: Gitspace is stopped
+    gitspaceRunning: Gitspace is running
+    stopGitspace: Stop Gitspace
+    fetchingGitspace: Fetching Gitspace Details
+    fetchingLogs: Fetching gitspace logs
+    logsFailed: Gitspace logs api failed
+    noLogsFound: No gitspace logs found
+    wrongIdentifier: Invalid gitspace id or project params
+    fetchingDetails: Fetching Gitspace Details ....
+  repository:
+    repo: Repository
+    selectRepository: Select Repository
+    pasteRepo: Paste a Git URL to create Gitspace
+    pasterRepoSubtext: You can use any public Git repository to create a Gitspace
+    privateRepoWarning: Repo URL is of Private repository
+    publicRepo: You can use any public Git repository to create a Gitspace
+    continueWith: Continue with
+    repositoryURL: Repository URL
+  ide:
+    browser: VS Code Browser
+    desktop: VS Code Desktop
+    title: IDE
+    selectIDE: Select IDE
+    vsCode: VS Code
+    openVSCode: Open in VS Code Desktop
+    openBrowser: Open in Browser
+showMoreText: Show More
+addOptionalCommitMessage: Add (optional) commit message
+confirmStrat: 'Confirm {{strat}}'
+waiting: Waiting
+changesRequestedBy: CHANGES REQUESTED BY
+mergeBranchTitle: Merge branch {{branchName}} of {{repoPath}} (#{{prNum}})
+http: HTTP
+ssh: SSH
+stepNum: STEP {{num}}
+cmdlineInfo:
+  title: Resolve conflicts via command line
+  content: If the conflicts on this branch are too complex to resolve in the web editor, you can check it out via command line to resolve the conflicts
+  stepOne: Clone the repository or update your local repository with the latest changes
+  stepOneSub: git pull origin {target}
+  stepTwo: Switch to the head branch of the pull request
+  stepTwoSub: git checkout {source}
+  stepThree: Merge the base branch into the head branch
+  stepThreeSub: git merge {target}
+  stepFour: Fix the conflicts and commit the result
+  stepFourSub: See Resolving a merge conflict using the command line for step-by-step instruction on resolving merge conflicts
+  stepFive: Push the changes
+  stepFiveSub: git push -u origin {source}
+sshCard:
+  newSshKey: New SSH Key
+  sshkey: SSH Key
+  publicKey: Public Key
+  noSshKeyText: There are no SSH Keys associated with this account
+  mySshKeys: My SSH Keys
+  sshContent: SSH keys allow you to establish a secure connection between your computer and GitLab. SSH fingerprints
+    verify if the client is connecting to the correct host. {{learnMore}}
+  beginsWithContent: Begins with 'ssh-rsa', 'ecdsa-sha2-nistp256', 'ecdsa-sha2-nistp384', 'ecdsa-sha2-nistp521', 'ssh-ed25519', 'sk-ecdsa-sha2-nistp256@openssh.com', or 'sk-ssh-ed25519@openssh.com'.
+  deleteSshTitle: Delete SSH Key
+  deleteSshMsg: Are you sure you want to delete this SSH Key?
+  successSshKeyMsg: SSH Key deleted successfully
+  addedOn: Added On
+  personalAccessToken: Personal Access Token
+  noTokensText: There are no personal access tokens associated with this account

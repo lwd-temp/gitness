@@ -21,7 +21,15 @@ import langMap from 'lang-map'
 import type { EditorDidMount } from 'react-monaco-editor'
 import type { editor } from 'monaco-editor'
 import type { EditorView } from '@codemirror/view'
-import type { EnumMergeMethod, TypesRuleViolations, TypesViolation, TypesCodeOwnerEvaluationEntry } from 'services/code'
+import type { FormikProps } from 'formik'
+import type { SelectOption } from '@harnessio/uicore'
+import type {
+  EnumMergeMethod,
+  TypesRuleViolations,
+  TypesViolation,
+  TypesCodeOwnerEvaluationEntry,
+  TypesListCommitResponse
+} from 'services/code'
 import type { GitInfoProps } from './GitUtils'
 
 export enum ACCESS_MODES {
@@ -147,9 +155,14 @@ export interface SourceCodeEditorProps {
 export interface PullRequestActionsBoxProps extends Pick<GitInfoProps, 'repoMetadata' | 'pullReqMetadata'> {
   onPRStateChanged: () => void
   refetchReviewers: () => void
+  allowedStrategy: string[]
+  pullReqCommits: TypesListCommitResponse | undefined
+  PRStateLoading: boolean
+  conflictingFiles: string[] | undefined
+  setConflictingFiles: React.Dispatch<React.SetStateAction<string[] | undefined>>
 }
 
-export interface PRMergeOption {
+export interface PRMergeOption extends SelectOption {
   method: EnumMergeMethod | 'close'
   title: string
   desc: string
@@ -395,6 +408,31 @@ export enum FileSection {
   HISTORY = 'history'
 }
 
+export enum ApproveState {
+  APPROVED = 'approved',
+  CHANGEREQ = 'changereq',
+  APPROVE = 'approve',
+  OUTDATED = 'outdated'
+}
+
+export enum CheckStatus {
+  PENDING = 'pending',
+  RUNNING = 'running',
+  SUCCESS = 'success',
+  FAILURE = 'failure',
+  ERROR = 'error',
+  SKIPPED = 'skipped',
+  KILLED = 'killed'
+}
+
+export enum PRCommentFilterType {
+  SHOW_EVERYTHING = 'showEverything',
+  ALL_COMMENTS = 'allComments',
+  MY_COMMENTS = 'myComments',
+  RESOLVED_COMMENTS = 'resolvedComments',
+  UNRESOLVED_COMMENTS = 'unresolvedComments'
+}
+
 const MONACO_SUPPORTED_LANGUAGES = [
   'abap',
   'apex',
@@ -518,6 +556,18 @@ export const filenameToLanguage = (name?: string): string | undefined => {
   return PLAIN_TEXT
 }
 
+export type EnumPublicKeyUsage = 'auth'
+
+export interface TypeKeys {
+  created: number
+  verified: number | undefined
+  identifier: string
+  usage: EnumPublicKeyUsage
+  fingerprint: string
+  comment: string
+  type: string
+}
+
 interface WaitUtilParams<T> {
   test: () => T
   onMatched: (result: T) => void
@@ -525,6 +575,13 @@ interface WaitUtilParams<T> {
   duration?: number
   interval?: number
 }
+
+export interface inlineMergeFormValues {
+  commitMessage: string
+  commitTitle: string
+}
+
+export type inlineMergeFormRefType = FormikProps<inlineMergeFormValues>
 
 export function waitUntil<T>({ test, onMatched, onExpired, duration = 5000, interval = 50 }: WaitUtilParams<T>) {
   const result = test()
@@ -558,6 +615,11 @@ export enum MergeCheckStatus {
   CONFLICT = 'conflict'
 }
 
+export enum CodeOwnerReqDecision {
+  CHANGEREQ = 'changereq',
+  APPROVED = 'approved',
+  WAIT_FOR_APPROVAL = ''
+}
 /**
  * Convert number of bytes into human readable format
  *

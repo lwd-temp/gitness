@@ -17,23 +17,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { EditorView } from '@codemirror/view'
 import { Render, Match, Truthy, Falsy, Else } from 'react-jsx-match'
-import {
-  Container,
-  Layout,
-  Avatar,
-  TextInput,
-  Text,
-  FlexExpander,
-  Button,
-  useIsMounted,
-  ButtonVariation,
-  ButtonSize,
-  StringSubstitute,
-  AvatarGroup
-} from '@harnessio/uicore'
+import { Container, Layout, Avatar, TextInput, Text, FlexExpander, Button, useIsMounted } from '@harnessio/uicore'
 import { Color, FontVariation } from '@harnessio/design-system'
 import cx from 'classnames'
-import { isEqual, noop, defaultTo, get, uniq } from 'lodash-es'
+import { isEqual, noop, defaultTo, get } from 'lodash-es'
 import { TimePopoverWithLocal } from 'utils/timePopoverLocal/TimePopoverWithLocal'
 import { useStrings } from 'framework/strings'
 import { ThreadSection } from 'components/ThreadSection/ThreadSection'
@@ -43,9 +30,12 @@ import type { TypesRepository } from 'services/code'
 import { OptionsMenuButton } from 'components/OptionsMenuButton/OptionsMenuButton'
 import { MarkdownEditorWithPreview } from 'components/MarkdownEditorWithPreview/MarkdownEditorWithPreview'
 import { MarkdownViewer } from 'components/MarkdownViewer/MarkdownViewer'
-import { ButtonRoleProps } from 'utils/Utils'
+import { ButtonRoleProps, CodeCommentState } from 'utils/Utils'
 import { useResizeObserver } from 'hooks/useResizeObserver'
 import { useCustomEventListener } from 'hooks/useEventListener'
+import type { SuggestionBlock } from 'components/SuggestionBlock/SuggestionBlock'
+import commentActiveIconUrl from './comment.svg?url'
+import commentResolvedIconUrl from './comment-resolved.svg?url'
 import css from './CommentBox.module.scss'
 
 export interface CommentItem<T = unknown> {
@@ -108,6 +98,7 @@ interface CommentBoxProps<T> {
   standalone: boolean
   routingId: string
   copyLinkToComment: (commentId: number, commentItem: CommentItem<T>) => void
+  suggestionBlock?: SuggestionBlock
 }
 
 const CommentBoxInternal = <T = unknown,>({
@@ -131,7 +122,8 @@ const CommentBoxInternal = <T = unknown,>({
   repoMetadata,
   standalone,
   routingId,
-  copyLinkToComment
+  copyLinkToComment,
+  suggestionBlock
 }: CommentBoxProps<T>) => {
   const { getString } = useStrings()
   const [comments, setComments] = useState<CommentItem<T>[]>(commentItems)
@@ -217,6 +209,7 @@ const CommentBoxInternal = <T = unknown,>({
             }}
             outlets={outlets}
             copyLinkToComment={copyLinkToComment}
+            suggestionBlock={suggestionBlock}
           />
           <Match expr={showReplyPlaceHolder && enableReplyPlaceHolderRef.current}>
             <Truthy>
@@ -298,6 +291,7 @@ const CommentBoxInternal = <T = unknown,>({
                     setDirties({ ...dirties, ['new']: _dirty })
                   }}
                   autoFocusAndPosition={autoFocusAndPosition ? !showReplyPlaceHolder : false}
+                  suggestionBlock={suggestionBlock}
                 />
               </Container>
             </Falsy>
@@ -310,7 +304,10 @@ const CommentBoxInternal = <T = unknown,>({
 }
 
 interface CommentsThreadProps<T>
-  extends Pick<CommentBoxProps<T>, 'commentItems' | 'handleAction' | 'outlets' | 'copyLinkToComment'> {
+  extends Pick<
+    CommentBoxProps<T>,
+    'commentItems' | 'handleAction' | 'outlets' | 'copyLinkToComment' | 'suggestionBlock'
+  > {
   onQuote: (content: string) => void
   setDirty: (index: number, dirty: boolean) => void
   repoMetadata: TypesRepository | undefined
@@ -323,7 +320,8 @@ const CommentsThread = <T = unknown,>({
   setDirty,
   outlets = {},
   repoMetadata,
-  copyLinkToComment
+  copyLinkToComment,
+  suggestionBlock
 }: CommentsThreadProps<T>) => {
   const { getString } = useStrings()
   const { standalone, routingId } = useAppContext()
@@ -335,210 +333,259 @@ const CommentsThread = <T = unknown,>({
     },
     [editIndexes]
   )
-  const collapseResolvedComments = useMemo(() => !!get(commentItems[0], 'payload.resolved'), [commentItems])
-  const shouldCollapsedResolvedComments = useMemo(
-    () =>
-      collapseResolvedComments &&
-      !(commentItems.length === 1 && shorten(commentItems[0].content) === commentItems[0].content),
-    [commentItems, collapseResolvedComments]
+  const isCommentThreadResolved = useMemo(() => !!get(commentItems[0], 'payload.resolved'), [commentItems])
+  const domRef = useRef<HTMLElement>()
+  const show = useRef(isCommentThreadResolved ? false : true)
+  const internalFlags = useRef({ initialized: false })
+
+  useEffect(
+    function renderToggleCommentsButton() {
+      // Get the row that contains the comment. If the comment is spanned for multiple lines, the
+      // row is the last row
+      let annotatedRow = domRef.current?.closest('tr') as HTMLTableRowElement
+
+      // Make sure annotatedRow is not one of rows which renders a comment
+      while (annotatedRow && !annotatedRow.dataset.sourceLineNumber) {
+        annotatedRow = annotatedRow?.previousElementSibling as HTMLTableRowElement
+      }
+
+      if (annotatedRow) {
+        const lineNumColDOM = annotatedRow.firstElementChild as HTMLElement
+        const sourceLineNumber = annotatedRow.dataset.sourceLineNumber
+        const button: HTMLButtonElement = lineNumColDOM?.querySelector('button') || document.createElement('button')
+
+        if (!button.onclick) {
+          const toggleHidden = (dom: Element) => {
+            if (show.current) dom.setAttribute('hidden', '')
+            else dom.removeAttribute('hidden')
+          }
+          const toggleComments = (e: KeyboardEvent | MouseEvent) => {
+            let commentRow = annotatedRow.nextElementSibling as HTMLElement
+
+            while (commentRow?.dataset?.annotatedLine) {
+              toggleHidden(commentRow)
+
+              // Toggle opposite place-holder as well
+              const diffParent = commentRow.closest('.d2h-code-wrapper')?.parentElement
+              const oppositeDiv = diffParent?.classList.contains('right')
+                ? diffParent.previousElementSibling
+                : diffParent?.nextElementSibling
+              const oppositePlaceHolders = oppositeDiv?.querySelectorAll(
+                `[data-place-holder-for-line="${sourceLineNumber}"]`
+              )
+
+              oppositePlaceHolders?.forEach(dom => toggleHidden(dom))
+
+              commentRow = commentRow.nextElementSibling as HTMLElement
+            }
+            show.current = !show.current
+
+            if (!show.current) button.dataset.threadsCount = String(activeThreads + resolvedThreads)
+            else delete button.dataset.threadsCount
+
+            e.stopPropagation()
+          }
+
+          button.classList.add(css.toggleComment)
+          button.title = getString('pr.toggleComments')
+
+          button.addEventListener('keydown', e => {
+            if (e.key === 'Enter') toggleComments(e)
+          })
+          button.onclick = toggleComments
+
+          lineNumColDOM.appendChild(button)
+        }
+
+        let commentRow = annotatedRow.nextElementSibling as HTMLElement
+        let resolvedThreads = 0
+        let activeThreads = 0
+
+        while (commentRow?.dataset?.annotatedLine) {
+          if (commentRow.dataset.commentThreadStatus == CodeCommentState.RESOLVED) {
+            resolvedThreads++
+            if (!internalFlags.current.initialized) show.current = false
+          } else activeThreads++
+
+          commentRow = commentRow.nextElementSibling as HTMLElement
+        }
+
+        button.style.backgroundImage = `url("${activeThreads ? commentActiveIconUrl : commentResolvedIconUrl}")`
+
+        if (!internalFlags.current.initialized) {
+          internalFlags.current.initialized = true
+
+          if (!show.current && resolvedThreads) button.dataset.threadsCount = String(resolvedThreads)
+          else delete button.dataset.threadsCount
+        }
+      }
+    },
+    [isCommentThreadResolved, getString]
   )
-  const [collapsed, setCollapsed] = useState(collapseResolvedComments)
 
   return (
     <Render when={commentItems.length}>
-      <Container className={css.viewer} padding="xlarge">
-        {commentItems
-          .filter((_commentItem, index) => {
-            return collapseResolvedComments && collapsed ? index === 0 : true
-          })
-          .map((commentItem, index) => {
-            const isLastItem = index === commentItems.length - 1
+      <Container className={css.viewer} padding="xlarge" ref={domRef}>
+        {commentItems.map((commentItem, index) => {
+          const isLastItem = index === commentItems.length - 1
 
-            return (
-              <ThreadSection
-                key={index}
-                title={
-                  <Layout.Horizontal spacing="small" style={{ alignItems: 'center' }}>
-                    <Text inline icon="code-chat"></Text>
-                    <Avatar name={commentItem?.author} size="small" hoverCard={false} />
-                    <Text inline>
-                      <strong>{commentItem?.author}</strong>
-                    </Text>
-                    <PipeSeparator height={8} />
-                    <Text inline font={{ variation: FontVariation.SMALL }} color={Color.GREY_400}>
-                      <TimePopoverWithLocal
-                        time={defaultTo(commentItem?.edited as number, 0)}
-                        inline={false}
-                        font={{ variation: FontVariation.SMALL }}
-                        color={Color.GREY_400}
-                      />
-                    </Text>
+          return (
+            <ThreadSection
+              key={index}
+              title={
+                <Layout.Horizontal
+                  spacing="small"
+                  style={{ alignItems: 'center' }}
+                  data-outdated={commentItem?.outdated}>
+                  <Text inline icon="code-chat"></Text>
+                  <Avatar name={commentItem?.author} size="small" hoverCard={false} />
+                  <Text inline>
+                    <strong>{commentItem?.author}</strong>
+                  </Text>
+                  <PipeSeparator height={8} />
+                  <Text inline font={{ variation: FontVariation.SMALL }} color={Color.GREY_400}>
+                    <TimePopoverWithLocal
+                      time={defaultTo(commentItem?.edited as number, 0)}
+                      inline={false}
+                      font={{ variation: FontVariation.SMALL }}
+                      color={Color.GREY_400}
+                    />
+                  </Text>
 
-                    <Render when={commentItem?.edited !== commentItem?.created || !!commentItem?.deleted}>
-                      <>
-                        <PipeSeparator height={8} />
-                        <Text inline font={{ variation: FontVariation.SMALL }} color={Color.GREY_400}>
-                          {getString(commentItem?.deleted ? 'deleted' : 'edited')}
-                        </Text>
-                      </>
-                    </Render>
-
-                    <Render when={commentItem?.outdated}>
-                      <Text inline font={{ variation: FontVariation.SMALL }} className={css.outdated}>
-                        {getString('pr.outdated')}
+                  <Render when={commentItem?.edited !== commentItem?.created || !!commentItem?.deleted}>
+                    <>
+                      <PipeSeparator height={8} />
+                      <Text inline font={{ variation: FontVariation.SMALL }} color={Color.GREY_400}>
+                        {getString(commentItem?.deleted ? 'deleted' : 'edited')}
                       </Text>
-                    </Render>
-
-                    <FlexExpander />
-                    <Layout.Horizontal>
-                      <Render when={index === 0 && outlets[CommentBoxOutletPosition.LEFT_OF_OPTIONS_MENU]}>
-                        <Container padding={{ right: 'medium' }}>
-                          {outlets[CommentBoxOutletPosition.LEFT_OF_OPTIONS_MENU]}
-                        </Container>
-                      </Render>
-                      <Render when={!commentItem?.deleted}>
-                        <OptionsMenuButton
-                          isDark={true}
-                          icon="Options"
-                          iconProps={{ size: 14 }}
-                          style={{ padding: '5px' }}
-                          width="100px"
-                          items={[
-                            {
-                              hasIcon: true,
-                              className: cx(css.optionMenuIcon, css.edit),
-                              iconName: 'Edit',
-                              text: getString('edit'),
-                              onClick: () => setEditIndexes({ ...editIndexes, ...{ [index]: true } })
-                            },
-                            {
-                              hasIcon: true,
-                              className: css.optionMenuIcon,
-                              iconName: 'code-quote',
-                              text: getString('quote'),
-                              onClick: () => onQuote(commentItem?.content)
-                            },
-                            {
-                              hasIcon: true,
-                              className: css.optionMenuIcon,
-                              iconName: 'code-copy',
-                              text: getString('pr.copyLinkToComment'),
-                              onClick: () => copyLinkToComment(commentItem.id, commentItems[0])
-                            },
-                            '-',
-                            {
-                              className: css.deleteIcon,
-                              hasIcon: true,
-                              iconName: 'main-trash',
-                              isDanger: true,
-                              text: getString('delete'),
-                              onClick: async () => {
-                                if (await handleAction(CommentAction.DELETE, '', commentItem)) {
-                                  resetStateAtIndex(index)
-                                }
-                              }
-                            }
-                          ]}
-                        />
-                      </Render>
-                    </Layout.Horizontal>
-                  </Layout.Horizontal>
-                }
-                hideGutter={isLastItem || (collapseResolvedComments && collapsed)}>
-                <Container padding={{ bottom: isLastItem ? undefined : 'xsmall' }} data-comment-id={commentItem.id}>
-                  <Render when={index === 0 && outlets[CommentBoxOutletPosition.TOP_OF_FIRST_COMMENT]}>
-                    <Container className={css.outletTopOfFirstOfComment}>
-                      {outlets[CommentBoxOutletPosition.TOP_OF_FIRST_COMMENT]}
-                    </Container>
+                    </>
                   </Render>
 
-                  <Match expr={editIndexes[index]}>
-                    <Truthy>
-                      <Container className={css.editCommentContainer} data-comment-editor-shown="true">
-                        <MarkdownEditorWithPreview
-                          routingId={routingId}
-                          standalone={standalone}
-                          repoMetadata={repoMetadata}
-                          value={commentItem?.content}
-                          onSave={async value => {
-                            if (await handleAction(CommentAction.UPDATE, value, commentItem)) {
-                              commentItem.content = value
-                              resetStateAtIndex(index)
-                            }
-                          }}
-                          onCancel={() => resetStateAtIndex(index)}
-                          setDirty={_dirty => {
-                            setDirty(index, _dirty)
-                          }}
-                          i18n={{
-                            placeHolder: getString('leaveAComment'),
-                            tabEdit: getString('write'),
-                            tabPreview: getString('preview'),
-                            save: getString('save'),
-                            cancel: getString('cancel')
-                          }}
-                          autoFocusAndPosition
-                        />
-                      </Container>
-                    </Truthy>
-                    <Else>
-                      <Match expr={commentItem?.deleted}>
-                        <Truthy>
-                          <Text className={css.deleted}>{getString('commentDeleted')}</Text>
-                        </Truthy>
-                        <Else>
-                          <MarkdownViewer
-                            source={
-                              collapseResolvedComments && collapsed
-                                ? shorten(commentItem?.content)
-                                : commentItem?.content
-                            }
-                          />
-                        </Else>
-                      </Match>
-                    </Else>
-                  </Match>
-                </Container>
-              </ThreadSection>
-            )
-          })}
+                  <Render when={commentItem?.outdated}>
+                    <Text inline font={{ variation: FontVariation.SMALL }} className={css.outdated}>
+                      {getString('pr.outdated')}
+                    </Text>
+                  </Render>
 
-        <Render when={shouldCollapsedResolvedComments}>
-          <Container
-            flex={{ justifyContent: 'space-around' }}
-            padding={{ bottom: 'xsmall' }}
-            data-comments-collapsed={collapsed}>
-            <Layout.Horizontal>
-              {collapsed && commentItems.length > 1 && (
-                <AvatarGroup
-                  avatars={uniq(
-                    commentItems.filter((_, index) => !!index).map((item, index) => ({ name: item.author, index }))
-                  )}
-                  overlap={true}
-                  restrictLengthTo={10}
-                  avatarGroupProps={{
-                    hoverCard: false
-                  }}
-                  size="small"
-                />
-              )}
-              <Button
-                rightIcon={collapsed ? 'main-chevron-down' : 'main-chevron-up'}
-                iconProps={{ size: 14, margin: { left: 'xsmall' } }}
-                variation={ButtonVariation.LINK}
-                size={ButtonSize.SMALL}
-                onClick={() => setCollapsed(!collapsed)}>
-                <StringSubstitute
-                  str={getString(collapsed ? 'pr.moreComments' : 'showLessMatches')}
-                  vars={{
-                    num: commentItems.length <= 2 ? ' ' : commentItems.length - 1,
-                    count: commentItems.length - 1
-                  }}
-                />
-              </Button>
-            </Layout.Horizontal>
-          </Container>
-        </Render>
+                  <FlexExpander />
+                  <Layout.Horizontal>
+                    <Render when={index === 0 && outlets[CommentBoxOutletPosition.LEFT_OF_OPTIONS_MENU]}>
+                      <Container padding={{ right: 'medium' }}>
+                        {outlets[CommentBoxOutletPosition.LEFT_OF_OPTIONS_MENU]}
+                      </Container>
+                    </Render>
+                    <Render when={!commentItem?.deleted}>
+                      <OptionsMenuButton
+                        isDark={true}
+                        icon="Options"
+                        iconProps={{ size: 14 }}
+                        style={{ padding: '5px' }}
+                        width="100px"
+                        items={[
+                          {
+                            hasIcon: true,
+                            className: cx(css.optionMenuIcon, css.edit),
+                            iconName: 'Edit',
+                            text: getString('edit'),
+                            onClick: () => setEditIndexes({ ...editIndexes, ...{ [index]: true } })
+                          },
+                          {
+                            hasIcon: true,
+                            className: css.optionMenuIcon,
+                            iconName: 'code-quote',
+                            text: getString('quote'),
+                            onClick: () => onQuote(commentItem?.content)
+                          },
+                          {
+                            hasIcon: true,
+                            className: css.optionMenuIcon,
+                            iconName: 'code-copy',
+                            text: getString('pr.copyLinkToComment'),
+                            onClick: () => copyLinkToComment(commentItem.id, commentItems[0])
+                          },
+                          '-',
+                          {
+                            className: css.deleteIcon,
+                            hasIcon: true,
+                            iconName: 'main-trash',
+                            isDanger: true,
+                            text: getString('delete'),
+                            onClick: async () => {
+                              if (await handleAction(CommentAction.DELETE, '', commentItem)) {
+                                resetStateAtIndex(index)
+                              }
+                            }
+                          }
+                        ]}
+                      />
+                    </Render>
+                  </Layout.Horizontal>
+                </Layout.Horizontal>
+              }
+              hideGutter={isLastItem}>
+              <Container padding={{ bottom: isLastItem ? undefined : 'xsmall' }} data-comment-id={commentItem.id}>
+                <Render when={index === 0 && outlets[CommentBoxOutletPosition.TOP_OF_FIRST_COMMENT]}>
+                  <Container className={css.outletTopOfFirstOfComment}>
+                    {outlets[CommentBoxOutletPosition.TOP_OF_FIRST_COMMENT]}
+                  </Container>
+                </Render>
+
+                <Match expr={editIndexes[index]}>
+                  <Truthy>
+                    <Container className={css.editCommentContainer} data-comment-editor-shown="true">
+                      <MarkdownEditorWithPreview
+                        routingId={routingId}
+                        standalone={standalone}
+                        repoMetadata={repoMetadata}
+                        value={commentItem?.content}
+                        onSave={async value => {
+                          if (await handleAction(CommentAction.UPDATE, value, commentItem)) {
+                            commentItem.content = value
+                            resetStateAtIndex(index)
+                          }
+                        }}
+                        onCancel={() => resetStateAtIndex(index)}
+                        setDirty={_dirty => {
+                          setDirty(index, _dirty)
+                        }}
+                        i18n={{
+                          placeHolder: getString('leaveAComment'),
+                          tabEdit: getString('write'),
+                          tabPreview: getString('preview'),
+                          save: getString('save'),
+                          cancel: getString('cancel')
+                        }}
+                        autoFocusAndPosition
+                        suggestionBlock={suggestionBlock}
+                      />
+                    </Container>
+                  </Truthy>
+                  <Else>
+                    <Match expr={commentItem?.deleted}>
+                      <Truthy>
+                        <Text className={css.deleted}>{getString('commentDeleted')}</Text>
+                      </Truthy>
+                      <Else>
+                        <MarkdownViewer
+                          source={commentItem?.content}
+                          suggestionBlock={Object.assign(
+                            {
+                              commentId: commentItem.id,
+                              appliedCheckSum: get(commentItem, 'payload.metadata.suggestions.applied_check_sum', ''),
+                              appliedCommitSha: get(commentItem, 'payload.metadata.suggestions.applied_commit_sha', '')
+                            },
+                            suggestionBlock
+                          )}
+                          suggestionCheckSums={get(commentItem, 'payload.metadata.suggestions.check_sums', [])}
+                        />
+                      </Else>
+                    </Match>
+                  </Else>
+                </Match>
+              </Container>
+            </ThreadSection>
+          )
+        })}
       </Container>
     </Render>
   )
@@ -547,12 +594,5 @@ const CommentsThread = <T = unknown,>({
 export const CommentBox = React.memo(CommentBoxInternal)
 
 export const customEventForCommentWithId = (id: number) => `CommentBoxCustomEvent-${id}`
-
-const shorten = (str = '', maxLen = 140, separator = ' ') => {
-  const s = str.split('\n')[0]
-  const sub = s.length <= maxLen ? s : s.substr(0, s.lastIndexOf(separator, maxLen))
-
-  return sub.length < str.length ? sub + '...' : sub
-}
 
 const CRLF = '\n'

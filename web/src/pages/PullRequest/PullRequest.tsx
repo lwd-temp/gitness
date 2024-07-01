@@ -154,6 +154,7 @@ export default function PullRequest() {
                         onDescriptionSaved={() => {
                           setShowEditDescription(false)
                         }}
+                        pullReqCommits={pullReqCommits}
                         prStats={pullReqStats}
                         showEditDescription={showEditDescription}
                         onCancelEditDescription={() => setShowEditDescription(false)}
@@ -189,7 +190,7 @@ export default function PullRequest() {
                       />
                     ),
                     panel: (
-                      <Container className={css.changes}>
+                      <Container className={css.changes} data-page-section={PullRequestSection.FILES_CHANGED}>
                         {!!repoMetadata && !!pullReqMetadata && !!pullReqStats && (
                           <Changes
                             repoMetadata={repoMetadata}
@@ -217,8 +218,8 @@ export default function PullRequest() {
                     id: PullRequestSection.CHECKS,
                     title: (
                       <TabTitleWithCount
-                        icon="main-search"
-                        iconSize={14}
+                        icon={CodeIcon.CheckIcon}
+                        iconSize={16}
                         title={getString('checks')}
                         countElement={
                           pullReqChecksDecision?.overallStatus ? (
@@ -228,7 +229,8 @@ export default function PullRequest() {
                                   status={pullReqChecksDecision?.overallStatus}
                                   noBackground
                                   iconOnly
-                                  iconSize={15}
+                                  inPr
+                                  iconSize={pullReqChecksDecision?.overallStatus === 'failure' ? 17 : 15}
                                 />
 
                                 <Text

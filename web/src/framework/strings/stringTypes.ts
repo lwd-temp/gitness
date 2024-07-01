@@ -12,20 +12,25 @@ export interface StringsMap {
   activeBranches: string
   add: string
   addComment: string
+  addDescription: string
   addGitIgnore: string
   addLabel: string
   addLicense: string
   addMember: string
   addNewFile: string
+  addOptionalCommitMessage: string
   addReadMe: string
   addUserToSpace2: string
   admin: string
+  aheadDivergence: string
   aiSearch: string
   aidaGenSummary: string
   all: string
   allBranches: string
   allComments: string
+  allCommentsResolved: string
   allCommits: string
+  allConflictsNeedToBeResolved: string
   alreadyHaveAccount: string
   and: string
   applyChanges: string
@@ -36,12 +41,15 @@ export interface StringsMap {
   at: string
   attachText: string
   basedOn: string
+  behindDivergence: string
   blame: string
   blameCommitLine: string
   blameEmpty: string
+  bold: string
   botAlerts: string
   bottom: string
   branch: string
+  branchCommitCount: string
   branchCreated: string
   branchDeleted: string
   branchDivergenceAhead: string
@@ -122,6 +130,7 @@ export interface StringsMap {
   branchTagCreation: string
   branchTagDeletion: string
   branchUpToDate: string
+  branchUpToDateWith: string
   branches: string
   browse: string
   browseFiles: string
@@ -130,6 +139,82 @@ export interface StringsMap {
   cancelImport: string
   cancelImportConfirm: string
   cancelledImport: string
+  'cde.branchPlaceholder': string
+  'cde.branchValidationMessage': string
+  'cde.cloudDeveloperExperience': string
+  'cde.cpu': string
+  'cde.createGitspace': string
+  'cde.createRepo': string
+  'cde.deleteGitspace': string
+  'cde.deleteGitspaceText': string
+  'cde.deleteGitspaceTitle': string
+  'cde.deleteSuccess': string
+  'cde.details.actions': string
+  'cde.details.fetchingDetails': string
+  'cde.details.fetchingGitspace': string
+  'cde.details.fetchingLogs': string
+  'cde.details.gitspaceRunning': string
+  'cde.details.gitspaceStopped': string
+  'cde.details.goToDashboard': string
+  'cde.details.logsFailed': string
+  'cde.details.noData': string
+  'cde.details.noLogsFound': string
+  'cde.details.openBrowser': string
+  'cde.details.openEditor': string
+  'cde.details.provisioningGitspace': string
+  'cde.details.startGitspace': string
+  'cde.details.stopGitspace': string
+  'cde.details.stopProvising': string
+  'cde.details.wrongIdentifier': string
+  'cde.disk': string
+  'cde.editGitspace': string
+  'cde.eventTimeline': string
+  'cde.gitspaceDetail': string
+  'cde.gitspaceUpdateSuccess': string
+  'cde.gitspaces': string
+  'cde.hours': string
+  'cde.ide.browser': string
+  'cde.ide.desktop': string
+  'cde.ide.openBrowser': string
+  'cde.ide.openVSCode': string
+  'cde.ide.selectIDE': string
+  'cde.ide.title': string
+  'cde.ide.vsCode': string
+  'cde.introText1': string
+  'cde.introText2': string
+  'cde.introText3': string
+  'cde.logs': string
+  'cde.machine': string
+  'cde.machineValidationMessage': string
+  'cde.manageGitspaces': string
+  'cde.memory': string
+  'cde.na': string
+  'cde.newGitspace': string
+  'cde.noChange': string
+  'cde.noData': string
+  'cde.noGitspaces': string
+  'cde.noRepo': string
+  'cde.or': string
+  'cde.region': string
+  'cde.regionSelectWarning': string
+  'cde.regionValidationMessage': string
+  'cde.repoValidationMessage': string
+  'cde.repository.continueWith': string
+  'cde.repository.pasteRepo': string
+  'cde.repository.pasterRepoSubtext': string
+  'cde.repository.privateRepoWarning': string
+  'cde.repository.publicRepo': string
+  'cde.repository.repo': string
+  'cde.repository.repositoryURL': string
+  'cde.repository.selectRepository': string
+  'cde.repositoryAndBranch': string
+  'cde.retry': string
+  'cde.sessionDuration': string
+  'cde.startingGitspace': string
+  'cde.stopingGitspace': string
+  'cde.updateGitspace': string
+  'cde.used': string
+  'cde.viewGitspace': string
   changePassword: string
   changePasswordSuccesfully: string
   changeRepoVis: string
@@ -137,9 +222,47 @@ export interface StringsMap {
   changeRole: string
   changedSinceLastView: string
   changes: string
+  changesRequestedBy: string
+  'changesSection.approvalPending': string
+  'changesSection.changesAppByRev': string
+  'changesSection.changesApproved': string
+  'changesSection.changesApprovedByXReviewers': string
+  'changesSection.changesWereAppByCodeOwner': string
+  'changesSection.changesWereAppByLatestReqRev': string
+  'changesSection.codeOwnerReqChanges': string
+  'changesSection.codeOwnerReqChangesToPr': string
+  'changesSection.latestChangesApprovedByXReviewers': string
+  'changesSection.latestChangesPendingReqRev': string
+  'changesSection.latestChangesWereAppByCodeOwner': string
+  'changesSection.latestChangesWereApprovedByReq': string
+  'changesSection.noCodeOwnerReviewsReq': string
+  'changesSection.noReviewsReq': string
+  'changesSection.pendingAppFromCodeOwners': string
+  'changesSection.pendingLatestApprovalCodeOwners': string
+  'changesSection.pullReqWithoutAnyReviews': string
+  'changesSection.reqChangeFromCodeOwners': string
+  'changesSection.someChangesWereAppByCodeOwner': string
+  'changesSection.waitingOnCodeOwner': string
+  'changesSection.waitingOnLatestCodeOwner': string
+  'changesSection.waitingOnReviewers': string
+  'changesSection.xApprovalsArePending': string
   characterLimit: string
   checkRuns: string
+  'checkSection.allChecksSucceeded': string
+  'checkSection.allReqChecksPassed': string
+  'checkSection.someChecksFailed': string
+  'checkSection.someChecksNotComplete': string
+  'checkSection.someChecksRunning': string
+  'checkSection.someReqChecksFailed': string
+  'checkSection.someReqChecksPending': string
+  'checkSection.someReqChecksRunning': string
+  'checkStatus.error': string
+  'checkStatus.failed': string
+  'checkStatus.pending': string
+  'checkStatus.running': string
+  'checkStatus.succeeded': string
   checkSuites: string
+  checklist: string
   checks: string
   clear: string
   clickHereToDownload: string
@@ -148,13 +271,28 @@ export interface StringsMap {
   cloneText: string
   close: string
   closed: string
+  'cmdlineInfo.content': string
+  'cmdlineInfo.stepFive': string
+  'cmdlineInfo.stepFiveSub': string
+  'cmdlineInfo.stepFour': string
+  'cmdlineInfo.stepFourSub': string
+  'cmdlineInfo.stepOne': string
+  'cmdlineInfo.stepOneSub': string
+  'cmdlineInfo.stepThree': string
+  'cmdlineInfo.stepThreeSub': string
+  'cmdlineInfo.stepTwo': string
+  'cmdlineInfo.stepTwoSub': string
+  'cmdlineInfo.title': string
+  code: string
   'codeOwner.approvalCompleted': string
   'codeOwner.changesRequested': string
+  'codeOwner.pendingLatestApprovals': string
   'codeOwner.title': string
   'codeOwner.waitToApprove': string
   codeSearch: string
   codeSearchModal: string
   comingSoon: string
+  commandLine: string
   comment: string
   commentDeleted: string
   commit: string
@@ -179,7 +317,10 @@ export interface StringsMap {
   confirmNewPassword: string
   confirmPassRequired: string
   confirmPassword: string
+  confirmRepoVisButton: string
+  confirmStrat: string
   confirmation: string
+  conflictsFoundInThisBranch: string
   content: string
   contents: string
   contributor: string
@@ -206,6 +347,7 @@ export interface StringsMap {
   'createRepoModal.branchLabel': string
   'createRepoModal.privateLabel': string
   'createRepoModal.publicLabel': string
+  'createRepoModal.publicWarning': string
   createRepoPerms: string
   createSpace: string
   createTag: string
@@ -218,14 +360,18 @@ export interface StringsMap {
   customMin: string
   customSecond: string
   customTime: string
+  customizeMergeCommitMessage: string
   dangerDeleteRepo: string
   defaultBranch: string
   defaultBranchTitle: string
   delete: string
   deleteBranch: string
   deleteBranchConfirm: string
+  deleteBranchText: string
   deleteCommentConfirm: string
+  deleteFailedImport: string
   deleteFile: string
+  deleteImport: string
   deleteNotAllowed: string
   deleteRepoText: string
   deleteRepoTitle: string
@@ -236,9 +382,11 @@ export interface StringsMap {
   deleteTokenMsg: string
   deleteUser: string
   deleted: string
+  deletedImport: string
   deployKeys: string
   descending: string
   description: string
+  details: string
   diff: string
   disableWebhookContent: string
   disableWebhookTitle: string
@@ -276,6 +424,7 @@ export interface StringsMap {
   enterName: string
   enterNewBranchName: string
   enterNewPassword: string
+  enterRepoDescription: string
   enterRepoName: string
   enterSecret: string
   enterTagPlaceholder: string
@@ -331,6 +480,7 @@ export interface StringsMap {
   failedToCreateRepo: string
   failedToCreateSpace: string
   failedToDeleteBranch: string
+  failedToDeleteImport: string
   failedToDeleteWebhook: string
   failedToFetchFileContent: string
   failedToImportSpace: string
@@ -354,6 +504,7 @@ export interface StringsMap {
   getMyCloneTitle: string
   gitIgnore: string
   gitness: string
+  heading: string
   help: string
   hideCommitHistory: string
   history: string
@@ -362,6 +513,7 @@ export interface StringsMap {
   'homepage.selectSpaceContent': string
   'homepage.selectSpaceTitle': string
   'homepage.welcomeText': string
+  http: string
   'imageUpload.readyToUpload': string
   'imageUpload.text': string
   'imageUpload.title': string
@@ -420,6 +572,7 @@ export interface StringsMap {
   inactiveBranches: string
   invalidResponse: string
   isRequired: string
+  italic: string
   key: string
   'keywordSearch.sampleQueries.searchForClass': string
   'keywordSearch.sampleQueries.searchForFilesWithCMD': string
@@ -438,8 +591,13 @@ export interface StringsMap {
   makeRequired: string
   manageApiToken: string
   manageCredText: string
+  markAsDraft: string
   matchPassword: string
+  mergeBranchTitle: string
+  mergeCheckInProgress: string
   mergeCommit: string
+  mergeSetting: string
+  mergeStrategy: string
   merged: string
   minPassLimit: string
   missingPerms: string
@@ -596,6 +754,8 @@ export interface StringsMap {
   poweredByAI: string
   'pr.ableToMerge': string
   'pr.addDescription': string
+  'pr.addSuggestion': string
+  'pr.applySuggestions': string
   'pr.authorCommentedPR': string
   'pr.branchHasNoConflicts': string
   'pr.cantBeMerged': string
@@ -605,6 +765,8 @@ export interface StringsMap {
   'pr.checksFailure': string
   'pr.collapseFullFile': string
   'pr.commentLineNumbers': string
+  'pr.commitSuggestion': string
+  'pr.commitSuggestions': string
   'pr.copyLinkToComment': string
   'pr.createDraftPR': string
   'pr.descHasTooLongLine': string
@@ -631,6 +793,7 @@ export interface StringsMap {
   'pr.fileUnchanged': string
   'pr.mergeOptions.close': string
   'pr.mergeOptions.closeDesc': string
+  'pr.mergeOptions.createAMergeCommit': string
   'pr.mergeOptions.createMergeCommit': string
   'pr.mergeOptions.createMergeCommitDesc': string
   'pr.mergeOptions.rebaseAndMerge': string
@@ -655,7 +818,9 @@ export interface StringsMap {
   'pr.prStateChanged': string
   'pr.prStateChangedDraft': string
   'pr.readyForReview': string
+  'pr.removeSuggestion': string
   'pr.requestSubmitted': string
+  'pr.requestedChanges': string
   'pr.reviewChanges': string
   'pr.reviewSubmitted': string
   'pr.showDiff': string
@@ -664,11 +829,15 @@ export interface StringsMap {
   'pr.state': string
   'pr.status': string
   'pr.statusLine': string
+  'pr.suggestedChange': string
+  'pr.suggestionApplied': string
   'pr.titleChanged': string
   'pr.titleChangedTable': string
   'pr.titleIsRequired': string
   'pr.titlePlaceHolder': string
+  'pr.toggleComments': string
   'pr.unified': string
+  'pr.useCmdLineToResolveConflicts': string
   'prChecks.error': string
   'prChecks.failure': string
   'prChecks.killed': string
@@ -679,6 +848,7 @@ export interface StringsMap {
   'prChecks.success': string
   'prChecks.viewExternal': string
   prGenSummary: string
+  prHasNoConflicts: string
   prMustSelectSourceAndTargetBranches: string
   prSourceAndTargetMustBeDifferent: string
   'prState.draftDesc': string
@@ -739,6 +909,7 @@ export interface StringsMap {
   required: string
   resetZoom: string
   resolve: string
+  resolveComments: string
   resolved: string
   resolvedComments: string
   results: string
@@ -789,6 +960,7 @@ export interface StringsMap {
   seeNMoreMatches: string
   selectBranchPlaceHolder: string
   selectLanguagePlaceholder: string
+  selectMergeStrat: string
   selectRange: string
   selectRepositoryPlaceholder: string
   selectSpace: string
@@ -800,11 +972,14 @@ export interface StringsMap {
   setAsAdmin: string
   setting: string
   settings: string
+  showCheckAll: string
   showCommitHistory: string
   showEverything: string
   showLess: string
+  showLessCheck: string
   showLessMatches: string
   showMore: string
+  showMoreText: string
   showNMoreMatches: string
   signIn: string
   signUp: string
@@ -828,13 +1003,29 @@ export interface StringsMap {
   spaceUpdate: string
   spaces: string
   squashMerge: string
+  ssh: string
+  'sshCard.addedOn': string
+  'sshCard.beginsWithContent': string
+  'sshCard.deleteSshMsg': string
+  'sshCard.deleteSshTitle': string
+  'sshCard.mySshKeys': string
+  'sshCard.newSshKey': string
+  'sshCard.noSshKeyText': string
+  'sshCard.noTokensText': string
+  'sshCard.personalAccessToken': string
+  'sshCard.publicKey': string
+  'sshCard.sshContent': string
+  'sshCard.sshkey': string
+  'sshCard.successSshKeyMsg': string
   sslVerificationLabel: string
   startSearching: string
   status: string
   'step.select': string
   'stepCategory.select': string
+  stepNum: string
   submitReview: string
   success: string
+  suggestion: string
   summary: string
   switchBranch: string
   switchBranchesTags: string
@@ -847,6 +1038,7 @@ export interface StringsMap {
   tagger: string
   tags: string
   termsOfUse: string
+  thisRefHas: string
   title: string
   token: string
   tooltipRepoEdit: string
@@ -865,6 +1057,8 @@ export interface StringsMap {
   'triggers.newTrigger': string
   'triggers.updateSuccess': string
   turnOnSemanticSearch: string
+  unableToGetDivergence: string
+  unorderedList: string
   unrsolvedComment: string
   'unsavedChanges.leave': string
   'unsavedChanges.message': string
@@ -875,6 +1069,7 @@ export interface StringsMap {
   updateUser: string
   updateWebhook: string
   updated: string
+  upload: string
   uploadAFileError: string
   user: string
   userCreated: string
@@ -910,6 +1105,7 @@ export interface StringsMap {
   'validation.uidInvalid': string
   'validation.uidRequired': string
   value: string
+  view: string
   viewAllBranches: string
   viewAllTags: string
   viewCommitDetails: string
@@ -920,6 +1116,7 @@ export interface StringsMap {
   viewRepo: string
   viewed: string
   visibility: string
+  waiting: string
   webhook: string
   webhookAllEventsSelected: string
   webhookBranchCreated: string
@@ -949,6 +1146,7 @@ export interface StringsMap {
   webhooks: string
   whatsNew: string
   write: string
+  writeDownCommit: string
   yourBranches: string
   yours: string
   zoomIn: string

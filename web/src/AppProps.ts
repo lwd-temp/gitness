@@ -78,4 +78,7 @@ export interface AppProps {
 
   currentUserProfileURL: string
   defaultSettingsURL: string
+  isPublicAccessEnabledOnResources: boolean
+  isCurrentSessionPublic: boolean
+  module?: string
 }
